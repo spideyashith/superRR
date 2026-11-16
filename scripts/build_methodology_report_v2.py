@@ -542,14 +542,14 @@ def section_exec(doc, d) -> None:
 
     R.h2(doc, "How to read this document")
     for text in [
-        "Section 2 gives the final lists. This is the page to screenshot.",
+        "Section 4 gives the final lists. This is the page to screenshot.",
         "Sections 3 and 4 describe the data and the measurement chain, in enough detail to "
         "reproduce every number from the released code and tables.",
         "Sections 5 and 6 quantify uncertainty and test the rating against placebo splits, "
         "later matches and competition subsets.",
-        "Section 7 states the limitations plainly. It is in the body of the report, not an "
+        "Section 10 states the limitations plainly. It is in the body of the report, not an "
         "appendix, because the limitations are part of the result.",
-        "Section 8 documents reproducibility, including which frozen files can and cannot be "
+        "Section 12 documents reproducibility, including which frozen files can and cannot be "
         "verified against a historical hash.",
     ]:
         R.bullet(doc, text)
@@ -557,7 +557,7 @@ def section_exec(doc, d) -> None:
 
 # ------------------------------------------------------------------ section 2
 def section_rankings(doc, d) -> None:
-    R.h1(doc, "2", "Final rankings")
+    R.h1(doc, "4", "Final rankings")
     fr = d["fr"]
     bat, bowl = role_table(fr, "batter"), role_table(fr, "bowler")
 
@@ -567,18 +567,18 @@ def section_rankings(doc, d) -> None:
                 "hand, and the tables below are generated directly from "
                 "outputs/final_rankings.csv.")
 
-    R.h2(doc, "2.1  Batters", space_before=6)
+    R.h2(doc, "4.1  Batters", space_before=6)
     R.table(doc, RANK_HEADERS, ranking_rows(bat), RANK_WIDTHS, RANK_ALIGNS, reserve_from=10)
     R.source_note(doc, "Source: outputs/final_rankings.csv, role = batter, ranks 1-15. "
                        "R = reserve. P, C, S and Rating to three decimals; Median and CI are "
                        "integers; Mat = matches with at least one analysis-ready delivery.")
 
-    R.h2(doc, "2.2  Bowlers", space_before=6)
+    R.h2(doc, "4.2  Bowlers", space_before=6)
     R.table(doc, RANK_HEADERS, ranking_rows(bowl), RANK_WIDTHS, RANK_ALIGNS, reserve_from=10)
     R.source_note(doc, "Source: outputs/final_rankings.csv, role = bowler, ranks 1-15. "
                        "R = reserve. The same column definitions apply as for batters.")
 
-    R.h2(doc, "2.3  Column definitions")
+    R.h2(doc, "4.3  Column definitions")
     defs = [
         ("P", "Pressure-specific component. The player's leverage-weighted output relative to "
               "their own baseline, shrunk toward zero by an empirical-Bayes factor."),
@@ -607,7 +607,7 @@ def section_rankings(doc, d) -> None:
                 "report it; a single ordered list without intervals would overstate certainty.",
            space_after=4)
 
-    R.h2(doc, "2.4  Name verification", space_before=4)
+    R.h2(doc, "4.4  Name verification", space_before=4)
     R.body(doc, "Every ranked player was checked against three independent name sources before "
                 "submission: the competition player registry, the ball-by-ball delivery file and "
                 "the playing-eleven file. The table below is the released audit. Where all three "
@@ -639,7 +639,7 @@ def section_rankings(doc, d) -> None:
 
 # ------------------------------------------------------------------ section 3
 def section_data(doc, d, figs) -> None:
-    R.h1(doc, "3", "Data and scope")
+    R.h1(doc, "5", "Data and scope")
 
     R.body(doc, "The input is a proprietary ball-by-ball T20 data pack: 200,999 deliveries "
                 "across 883 matches, 98 venues and 138 competitions, with a separate player "
@@ -647,7 +647,7 @@ def section_data(doc, d, figs) -> None:
                 "profiled before any analysis; the audit that did so is released as "
                 "outputs/tables/data_audit.md and is summarised here.")
 
-    R.h2(doc, "3.1  Match universe")
+    R.h2(doc, "5.1  Match universe")
     rows = [
         ["Matches in the pack", "883"],
         ["Out of scope (two non-IPL, non-T20I T20 competitions)", "30"],
@@ -673,7 +673,7 @@ def section_data(doc, d, figs) -> None:
                 "Super overs are excluded from every stage; innings three and four are never "
                 "modelled.")
 
-    R.h2(doc, "3.2  Integrity checks that passed")
+    R.h2(doc, "5.2  Integrity checks that passed")
     checks = [
         ("Duplicate delivery rows", "0"),
         ("Duplicate match-innings-delivery combinations", "0"),
@@ -697,14 +697,14 @@ def section_data(doc, d, figs) -> None:
                 "ball. Forty wickets fall on wides, from run-outs and stumpings; those are "
                 "wickets lost but not bowler wickets, and the model treats them accordingly.")
 
-    R.h2(doc, "3.3  Names")
+    R.h2(doc, "5.3  Names")
     R.body(doc,                "The canonical name is the player registry name, not the ball-by-ball name. "
                 "Exactly one player ID differs between the two sources: the registry says "
                 "AHT Donald, the delivery file says Aneurin Donald. Every other ID is stable, with zero IDs "
                 "carrying multiple striker or bowler names. A per-player audit of registry name "
                 "against delivery name is released as outputs/name_check.csv.")
 
-    R.h2(doc, "3.4  Competition exposure of the ranked players")
+    R.h2(doc, "5.4  Competition exposure of the ranked players")
     fr = d["fr"]
     rows = []
     for role in ("batter", "bowler"):
@@ -727,7 +727,7 @@ def section_data(doc, d, figs) -> None:
                 "alone and one on IPL evidence alone. That asymmetry is the structural reason the "
                 "bowler list is the less stable of the two, because a single-competition bowler is "
                 "being compared with a mixed population on a record that contains none of the "
-                "other competition's deliveries. Section 6.3 shows what happens when the two "
+                "other competition's deliveries. Section 8.3 shows what happens when the two "
                 "pools are separated.", space_after=3)
 
     rer = d["reruns"]
@@ -746,7 +746,7 @@ def section_data(doc, d, figs) -> None:
         R.source_note(doc, "Sources: outputs/final_rankings.csv (competition_exposure) and "
                            "outputs/tables/s7_c3_reruns.csv. Ranks are within role.")
 
-    R.h2(doc, "3.5  Pressure value and overall skill are separate axes")
+    R.h2(doc, "5.5  Pressure value and overall skill are separate axes")
     R.figure(doc, figs["scatter"],
              "Figure 1.  Pressure-specific value (P) against overall skill (S), all 30 ranked "
              "players.",
@@ -765,7 +765,7 @@ def section_data(doc, d, figs) -> None:
 
 # ------------------------------------------------------------------ section 4
 def section_method(doc, d, figs) -> None:
-    R.h1(doc, "4", "Method")
+    R.h1(doc, "6", "Method")
     R.figure(doc, figs["wf"], "Figure 2. End-to-end analytical workflow for identifying "
              "high-pressure cricket performers.",
              "Source: scripts/build_methodology_diagrams.py. Each box is a saved artefact; "
@@ -775,7 +775,7 @@ def section_method(doc, d, figs) -> None:
                 "win probability exists, and shrinkage cannot be applied before the component "
                 "gates have been evaluated.")
 
-    R.h2(doc, "4.1  Win probability")
+    R.h2(doc, "6.1  Win probability")
     R.body(doc, "A ball-level win-probability model is fitted separately for each innings. "
                 "The innings-1 model predicts the probability that the batting side wins from "
                 "state features: score, wickets lost, legal balls remaining and phase. The "
@@ -804,8 +804,8 @@ def section_method(doc, d, figs) -> None:
 
     R.figure(doc, figs["pressure"], "Figure 3. Delivery-level pressure evaluation using "
              "match-state Win Probability changes and Leverage Index.",
-             "Source: scripts/build_methodology_diagrams.py; formulas in \u00a74.2.", width=15.6)
-    R.h2(doc, "4.2  Leverage")
+             "Source: scripts/build_methodology_diagrams.py; formulas in \u00a76.2.", width=15.6)
+    R.h2(doc, "6.2  Leverage")
     R.body(doc, "The leverage index (LI) is the normalised sensitivity of win probability to "
                 "the next delivery. It is scaled so that the within-innings mean is 1.0, which "
                 "makes an LI of 2.0 read as twice the average importance of a ball in that "
@@ -838,7 +838,7 @@ def section_method(doc, d, figs) -> None:
                 "defined on win-probability change and why the report does not claim that "
                 "pressure simply improves scoring.")
 
-    R.h2(doc, "4.3  Ball values and adjustment")
+    R.h2(doc, "6.3  Ball values and adjustment")
     R.body(doc, "Each delivery receives an expected-runs and expected-wicket value from "
                 "separate calibration models, and the realised outcome is differenced against "
                 "expectation. The difference is the ball value added (BVA). Summing BVA over a "
@@ -860,8 +860,8 @@ def section_method(doc, d, figs) -> None:
 
     R.figure(doc, figs["pcs"], "Figure 4. Three-component framework for evaluating "
              "pressure performance, consistency and overall skill.",
-             "Source: scripts/build_methodology_diagrams.py; definitions in \u00a74.4.", width=15.6)
-    R.h2(doc, "4.4  Components P, C and S")
+             "Source: scripts/build_methodology_diagrams.py; definitions in \u00a76.4.", width=15.6)
+    R.h2(doc, "6.4  Components P, C and S")
     gate = d["gate"]
     rows = []
     for _, r in gate.iterrows():
@@ -889,7 +889,7 @@ def section_method(doc, d, figs) -> None:
                 "which is indistinguishable from no agreement at all. The batter ordering is "
                 "robust to definitional choice; the bowler ordering is not.")
 
-    R.h2(doc, "4.5  Shrinkage")
+    R.h2(doc, "6.5  Shrinkage")
     sh = d["shrink"]
     med = sh.groupby("player_type")["shrink_factor"].median()
     R.body(doc, f"Component estimates are shrunk toward zero by an empirical-Bayes factor "
@@ -901,7 +901,7 @@ def section_method(doc, d, figs) -> None:
                 f"floored at 1e-06 for the estimator to be defined at all, which is a direct "
                 f"statement that the signal is close to the noise floor.")
 
-    R.h2(doc, "4.6  Rating and ranking")
+    R.h2(doc, "6.6  Rating and ranking")
     R.body(doc, "The composite rating combines the shrunk components on a common scaled basis "
                 "and is used for the second tie-break only. Ranking proceeds in three stages: "
                 "rank on the primary specification, re-rank inside 1,000 match resamples, then "
@@ -912,10 +912,10 @@ def section_method(doc, d, figs) -> None:
 
 # ------------------------------------------------------------------ section 5
 def section_stability(doc, d, figs) -> None:
-    R.h1(doc, "5", "Uncertainty and stability")
+    R.h1(doc, "7", "Uncertainty and stability")
     R.figure(doc, figs["boot"], "Figure 5. Match-level bootstrap procedure for "
              "assessing the stability and uncertainty of player rankings.",
-             "Source: scripts/build_methodology_diagrams.py; design in \u00a75.1.", width=15.6)
+             "Source: scripts/build_methodology_diagrams.py; design in \u00a77.1.", width=15.6)
     boot = d["boot"]
     n_res = int(boot["n_resamples"].iloc[0])
     n_bat = int((boot["role"] == "batter").sum())
@@ -925,7 +925,7 @@ def section_stability(doc, d, figs) -> None:
                 "thing that varies in reality. Two players do not face the same matches, so the "
                 "resampling unit here is the match, not the delivery.")
 
-    R.h2(doc, "5.1  The resampling scheme")
+    R.h2(doc, "7.1  The resampling scheme")
     for text in [
         f"{n_res:,} resamples, each drawing 766 matches with replacement.",
         "One random seed (42) for the whole procedure, so the draw sequence is fixed and "
@@ -950,7 +950,7 @@ def section_stability(doc, d, figs) -> None:
                 f"{n_bat} or 1 to {n_bowl} with no gaps and no change of population. A "
                 "permutation draw would fail all four assertions.")
 
-    R.h2(doc, "5.2  Rank intervals")
+    R.h2(doc, "7.2  Rank intervals")
     R.figure(doc, figs["forest"],
              "Figure 6.  Bootstrap rank intervals, top 15 of each role.",
              "Dots are the integer bootstrap median rank, which is the ranking key. Bars are "
@@ -970,7 +970,7 @@ def section_stability(doc, d, figs) -> None:
              "Solid bars are the published top 10; pale bars are reserves. Values are read "
              "from the p_top10 column of outputs/final_rankings.csv.")
 
-    R.h2(doc, "5.3  Definitional stability")
+    R.h2(doc, "7.3  Definitional stability")
     R.body(doc, "Uncertainty from sampling is one source of movement; definitional choice is "
                 "another, and for bowlers it is the larger of the two. The variant grid varies "
                 "the pressure definition, the weighting and the trimming across 72 "
@@ -1003,13 +1003,13 @@ def section_stability(doc, d, figs) -> None:
 
 # ------------------------------------------------------------------ section 6
 def section_validation(doc, d, figs) -> None:
-    R.h1(doc, "6", "Validation")
+    R.h1(doc, "8", "Validation")
     R.body(doc, "Three independent tests were run against the rating. Each asks a different "
                 "question: does the pressure split beat a meaningless split, does the rating "
                 "predict anything about later matches, and does the ranking survive a change of "
                 "competition. All three are reported, including the ones that came back null.")
 
-    R.h2(doc, "6.1  Placebo splits")
+    R.h2(doc, "8.1  Placebo splits")
     c1 = d["c1"]
     rows = []
     for _, r in c1.iterrows():
@@ -1045,7 +1045,7 @@ def section_validation(doc, d, figs) -> None:
                 "signal for bowlers in one split and for batters in the other, and the pressure "
                 "component does so only for batters under an early/late split.")
 
-    R.h2(doc, "6.2  Temporal holdout")
+    R.h2(doc, "8.2  Temporal holdout")
     c2 = d["c2"]
     rows = []
     keep = c2[c2["predictor"].isin(["rating", "S"])]
@@ -1072,7 +1072,7 @@ def section_validation(doc, d, figs) -> None:
                 "still a legitimate description of what has happened; it should not be sold as "
                 "a forecast, and it is not here.")
 
-    R.h2(doc, "6.3  Competition subsets")
+    R.h2(doc, "8.3  Competition subsets")
     c3 = d["c3"]
     rows = []
     for _, r in c3.iterrows():
@@ -1103,7 +1103,7 @@ def section_validation(doc, d, figs) -> None:
 
 # ------------------------------------------------------------------ section 7
 def section_limits(doc, d) -> None:
-    R.h1(doc, "7", "Limitations")
+    R.h1(doc, "10", "Limitations")
     R.body(doc, "The limitations are listed here rather than in an appendix because they "
                 "constrain what the rankings can be used for. Each item below is a property of "
                 "the evidence, not a caveat added for form.")
@@ -1149,7 +1149,7 @@ def section_limits(doc, d) -> None:
          "Excluding the opening two overs from the leverage baseline prevents those overs "
          "from inflating every later over, but it also discards genuine powerplay cricket. "
          "Variants without the trim are included in the 72-variant grid, and the ranking "
-         "shift they cause is part of the sensitivity reported in section 5."),
+         "shift they cause is part of the sensitivity reported in section 7."),
         ("Role and batting position confound the comparison.",
          "Batters who bat at six and seven face systematically higher leverage than openers, "
          "so part of any pressure advantage reflects where a player bats. The adjustment "
@@ -1188,7 +1188,7 @@ def section_limits(doc, d) -> None:
                 "exclude is precision: this method separates broad tiers of players reliably and "
                 "adjacent individuals poorly.", space_after=4)
 
-    R.h2(doc, "7.13  How these lists should be used", space_before=8)
+    R.h2(doc, "10.1  How these lists should be used", space_before=8)
     for text in [
         "Treat the top 10 as a selection pool rather than an order. Within a role the difference "
         "between rank 3 and rank 9 is smaller than the rank intervals those places carry.",
@@ -1210,20 +1210,20 @@ def section_limits(doc, d) -> None:
 
 # ------------------------------------------------------------------ section 8
 def section_repro(doc, d) -> None:
-    R.h1(doc, "8", "Reproducibility appendix")
+    R.h1(doc, "12", "Reproducibility appendix")
     R.body(doc, "This section states exactly what can be reproduced from the released "
                 "repository, and separates that from what cannot. The distinction is not "
                 "cosmetic: it determines whether an external reviewer can independently confirm "
                 "a number or has to take it on trust.")
 
-    R.h2(doc, "8.1  Test suite")
+    R.h2(doc, "12.1  Test suite")
     R.body(doc, "The complete automated suite is 97 tests and all of them pass. The figure "
                 "previously quoted in project documentation was 91; that number was stale and "
                 "has been superseded. The six additional tests are the bootstrap sampling checks "
-                "described in section 5.1, which did not exist when the earlier figure was "
+                "described in section 7.1, which did not exist when the earlier figure was "
                 "recorded.")
 
-    R.h2(doc, "8.2  Frozen-file hash audit")
+    R.h2(doc, "12.2  Frozen-file hash audit")
     manifest = d["manifest"]
     counts = manifest["status"].value_counts()
     n_verified_pack = int(counts.get("verified", 0))
@@ -1252,7 +1252,7 @@ def section_repro(doc, d) -> None:
                 f"{n_for} are Stage 7 outputs declared as files of record and hashed at creation. "
                 f"There are zero mismatches among the authentic comparisons and zero missing files.")
 
-    R.h2(doc, "8.3  What is and is not reproducible")
+    R.h2(doc, "12.3  What is and is not reproducible")
     R.body(doc, "Code, tests, configuration, saved tables, figures and the document generator "
                 "are all released. The raw data pack is proprietary and is not redistributed. "
                 "This means the pipeline can be re-run in full by anyone who has the pack in "
@@ -1261,7 +1261,7 @@ def section_repro(doc, d) -> None:
                 "code, so the report can be checked without the raw data even though the "
                 "pipeline cannot be re-executed.")
 
-    R.h2(doc, "8.4  Commands")
+    R.h2(doc, "12.4  Commands")
     for text in [
         "py -m pip install -r requirements.txt",
         "py -m pytest tests/ -q              # expect 97 passed",
@@ -1373,7 +1373,7 @@ def section_challenges(doc, d) -> None:
 
 
 def section_rr(doc, d) -> None:
-    R.h1(doc, "15", "Rajasthan Royals selection implications")
+    R.h1(doc, "9", "Rajasthan Royals selection implications")
     R.body(doc, "The rankings should support, not replace, cricketing judgement, role "
                 "requirements and scouting assessment. Translating the results into "
                 "selection insights:")
@@ -1395,7 +1395,7 @@ def section_rr(doc, d) -> None:
 
 
 def section_conclusion(doc, d) -> None:
-    R.h1(doc, "16", "Conclusion")
+    R.h1(doc, "11", "Conclusion")
     R.body(doc, "The analysis establishes a structured, context-aware and "
                 "uncertainty-conscious way to identify players whose contributions are "
                 "valuable in high-leverage T20 situations. It does not establish that these "
