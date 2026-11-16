@@ -21,7 +21,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "superr_selector_s2_release"
-ZIP = ROOT / "superr_selector_s2_release.zip"
+ZIP = ROOT / "superr_selector_s2_final_release.zip"
 
 # --------------------------------------------------------------------------
 # What goes in. Each entry is (source relative to ROOT, destination inside bundle)
@@ -32,6 +32,8 @@ FILES: list[tuple[str, str]] = [
     ("DECISIONS.md", "DECISIONS.md"),
     ("PRD_Pressure_Players.md", "docs/PRD_Pressure_Players.md"),
     ("docs/FINAL_REPORT_CONTENT_AND_DESIGN_BRIEF.md", "docs/FINAL_REPORT_CONTENT_AND_DESIGN_BRIEF.md"),
+    ("docs/Methodology_Report_Final.docx", "docs/Methodology_Report_Final.docx"),
+    ("outputs/Methodology_Report_Final.pdf", "outputs/Methodology_Report_Final.pdf"),
     ("data/README.md", "data/README.md"),
     ("requirements.txt", "requirements.txt"),
     # --- methodology / investigation write-ups ---------------------------
@@ -201,6 +203,12 @@ def main() -> int:
     for name in TABLE_ALLOWLIST:
         copy(ROOT / "outputs" / "tables" / name, OUT / "outputs" / "tables" / name, missing)
         copied += 1
+
+    report_figs = ROOT / FIGURES_SRC / "report"
+    if report_figs.exists():
+        for p in sorted(report_figs.glob("*.png")):
+            copy(p, OUT / FIGURES_DST / "report" / p.name, missing)
+            copied += 1
 
     # ---- manifest ------------------------------------------------------
     rows = []

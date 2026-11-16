@@ -12,9 +12,14 @@ lightgbm==4.7.0
 matplotlib==3.10.8
 reportlab==4.4.9
 jinja2==3.1.6
+python-docx==1.2.0
 
 # PDF verification (problem statement / report checks)
 pypdf==6.10.2
+pymupdf>=2.1.0
+
+# DOCX -> PDF export uses Word through pywin32 (Windows only)
+pywin32>=306; sys_platform == "win32"
 
 # Tests
 pytest==9.2.0

@@ -12,6 +12,9 @@ __MACOSX/
 superr_selector_s2_release/
 src_share.zip
 
+# Page renders produced by scripts/inspect_report_pages.py for visual review
+outputs/report_review/
+
 # ---------------------------------------------------------------------------
 # Caches, virtualenvs, tooling
 # ---------------------------------------------------------------------------
