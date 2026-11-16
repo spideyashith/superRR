@@ -34,6 +34,8 @@ FILES: list[tuple[str, str]] = [
     ("docs/FINAL_REPORT_CONTENT_AND_DESIGN_BRIEF.md", "docs/FINAL_REPORT_CONTENT_AND_DESIGN_BRIEF.md"),
     ("docs/Methodology_Report_Final.docx", "docs/Methodology_Report_Final.docx"),
     ("outputs/Methodology_Report_Final.pdf", "outputs/Methodology_Report_Final.pdf"),
+    ("docs/Methodology_Report_Final_v2.docx", "docs/Methodology_Report_Final_v2.docx"),
+    ("outputs/Methodology_Report_Final_v2.pdf", "outputs/Methodology_Report_Final_v2.pdf"),
     ("data/README.md", "data/README.md"),
     ("requirements.txt", "requirements.txt"),
     # --- methodology / investigation write-ups ---------------------------
