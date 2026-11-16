@@ -136,6 +136,7 @@ TABLE_ALLOWLIST = [
     "s7_c3_phase_share.csv",
     "s7_c3_batter_buckets.csv",
     "s7_c3_overlap_recomputed.csv",
+    "report_figure_values.csv",
     "combined_top15_competition_exposure.csv",
     "high_li_changes_after_wp_fix.csv",
     "high_li_changes_by_innings_phase.csv",

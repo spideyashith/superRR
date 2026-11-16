@@ -16,6 +16,8 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import pandas as pd
+from matplotlib.lines import Line2D
+from matplotlib.patches import Patch
 from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.shared import Cm, Pt
@@ -117,72 +119,196 @@ RANK_ALIGNS = ["center", "left", "right", "right", "right", "right",
 
 
 # ------------------------------------------------------------------ figures
+# Each figure records the geometry it actually drew, read back off the
+# matplotlib artist rather than off the source frame, so
+# scripts/verify_figures.py can compare the rendering data with the CSVs.
+RESERVE_PINK = "#F5C2D6"
+INTERVAL_GREY = "#98A2B3"
+PLOT_LOG: list[dict] = []
+
+
+def _log(figure, role, name, rank, key, value):
+    PLOT_LOG.append({"figure": figure, "role": role, "player_name": name,
+                     "rank": rank, "key": key, "value": value})
+
+
+def _tick_rows(ax):
+    """Read '3. Sunil Narine' style y labels back as (rank, name) pairs."""
+    rows = []
+    for t in ax.get_yticklabels():
+        head, _, name = t.get_text().partition(". ")
+        rows.append((int(head), name))
+    return rows
+
+
+def _clean_axes(ax):
+    for s in ("top", "right"):
+        ax.spines[s].set_visible(False)
+    ax.grid(lw=0.4, alpha=0.3)
+    ax.set_axisbelow(True)
+
+
 def fig_forest(d, path: Path) -> Path:
-    fig, axes = plt.subplots(1, 2, figsize=(7.4, 3.9))
-    for ax, role, label in zip(axes, ["batter", "bowler"], ["Batters", "Bowlers"]):
-        sub = role_table(d["fr"], role).iloc[::-1]
-        y = range(len(sub))
-        ax.hlines(list(y), sub["rank_lo"], sub["rank_hi"], color=NAVY, lw=2.2, alpha=0.55)
-        ax.plot(sub["boot_median"], list(y), "o", color=PINK, ms=4.4, zorder=3)
-        ax.set_yticks(list(y))
+    """Bootstrap rank intervals: pink dot = median, grey bar = 95% interval."""
+    roles = ["batter", "bowler"]
+    subs = {r: role_table(d["fr"], r).iloc[::-1] for r in roles}
+    hi_max = max(float(s["rank_hi"].max()) for s in subs.values())
+
+    fig, axes = plt.subplots(1, 2, figsize=(7.4, 4.0))
+    for ax, role, title in zip(axes, roles, ["Batters", "Bowlers"]):
+        sub = subs[role]
+        y = list(range(len(sub)))
+        ax.hlines(y, sub["rank_lo"], sub["rank_hi"], color=INTERVAL_GREY,
+                  lw=2.8, zorder=1)
+        ax.plot(sub["boot_median"], y, "o", color=PINK, ms=4.8, zorder=3,
+                clip_on=False)
+        ax.set_yticks(y)
         ax.set_yticklabels([f"{int(r)}. {n}" for r, n in
                             zip(sub["rank"], sub["player_name"])], fontsize=7.3)
+        ax.set_xlim(1, hi_max + 0.7)
         ax.set_xlabel("Bootstrap rank (1 = best)")
-        ax.set_title(label, color=NAVY, fontweight="bold")
-        ax.grid(axis="x", lw=0.4, alpha=0.35)
-        ax.set_axisbelow(True)
-        for s in ("top", "right"):
-            ax.spines[s].set_visible(False)
-    fig.tight_layout()
+        ax.set_title(title, color=NAVY, fontweight="bold")
+        _clean_axes(ax)
+
+        segs = ax.collections[0].get_segments()
+        med_x = ax.lines[0].get_xdata()
+        for i, (rk, nm) in enumerate(_tick_rows(ax)):
+            _log("fig_rank_intervals", role, nm, rk, "rank_lo", f"{segs[i][0][0]:.2f}")
+            _log("fig_rank_intervals", role, nm, rk, "rank_hi", f"{segs[i][1][0]:.2f}")
+            _log("fig_rank_intervals", role, nm, rk, "boot_median", f"{med_x[i]:.2f}")
+
+    handles = [
+        Line2D([], [], marker="o", linestyle="none", markerfacecolor=PINK,
+               markeredgecolor=PINK, ms=5.6,
+               label="Integer bootstrap median rank"),
+        Line2D([], [], color=INTERVAL_GREY, lw=2.8,
+               label="95% bootstrap rank interval (2.5th-97.5th percentile)"),
+    ]
+    fig.legend(handles=handles, loc="lower center", ncol=2, frameon=False,
+               fontsize=7.2, bbox_to_anchor=(0.5, 0.004))
+    fig.tight_layout(rect=(0, 0.085, 1, 1))
     fig.savefig(path, bbox_inches="tight", facecolor="white")
     plt.close(fig)
     return path
 
 
 def fig_p_top10(d, path: Path) -> Path:
-    fig, axes = plt.subplots(1, 2, figsize=(7.4, 3.7))
-    for ax, role, label in zip(axes, ["batter", "bowler"], ["Batters", "Bowlers"]):
+    """Share of resamples finishing in the top 10, in published rank order."""
+    fig, axes = plt.subplots(1, 2, figsize=(7.4, 4.1))
+    for ax, role, title in zip(axes, ["batter", "bowler"], ["Batters", "Bowlers"]):
         sub = role_table(d["fr"], role).iloc[::-1]
-        colors = [PINK if not r else "#F0A8C2" for r in sub["is_reserve"]]
+        colors = [RESERVE_PINK if bool(r) else PINK for r in sub["is_reserve"]]
         ax.barh([f"{int(r)}. {n}" for r, n in zip(sub["rank"], sub["player_name"])],
-                sub["p_top10"], color=colors, height=0.68)
+                sub["p_top10"], color=colors, height=0.70, zorder=2)
         ax.set_xlim(0, 1)
+        ax.set_xticks([0, 0.2, 0.4, 0.6, 0.8, 1.0])
         ax.set_xlabel("P(top 10) over 1,000 resamples")
-        ax.set_title(label, color=NAVY, fontweight="bold")
+        ax.set_title(title, color=NAVY, fontweight="bold")
         ax.tick_params(axis="y", labelsize=7.3)
-        ax.grid(axis="x", lw=0.4, alpha=0.35)
-        ax.set_axisbelow(True)
-        for s in ("top", "right"):
-            ax.spines[s].set_visible(False)
-    fig.tight_layout()
+        _clean_axes(ax)
+
+        for i, (rk, nm) in enumerate(_tick_rows(ax)):
+            w = float(ax.patches[i].get_width())
+            inside = w >= 0.80
+            ax.text(w - 0.022 if inside else w + 0.014, i, f"{w:.2f}",
+                    va="center", ha="right" if inside else "left",
+                    fontsize=6.3, color="white" if inside else "#2B2B2B",
+                    zorder=4)
+            _log("fig_p_top10", role, nm, rk, "p_top10", f"{w:.2f}")
+
+    handles = [Patch(facecolor=PINK, label="Top 10 (published rank 1-10)"),
+               Patch(facecolor=RESERVE_PINK, label="Reserve (rank 11-15)")]
+    fig.legend(handles=handles, loc="lower center", ncol=2, frameon=False,
+               fontsize=7.2, bbox_to_anchor=(0.5, 0.004))
+    fig.tight_layout(rect=(0, 0.085, 1, 1))
     fig.savefig(path, bbox_inches="tight", facecolor="white")
     plt.close(fig)
     return path
 
 
 def fig_scatter(d, path: Path) -> Path:
-    fig, ax = plt.subplots(figsize=(6.6, 4.0))
-    for role, color, marker in (("batter", NAVY, "o"), ("bowler", PINK, "s")):
-        sub = d["fr"][d["fr"]["role"] == role]
+    """P against S for all 30 ranked players, with headroom for the labels."""
+    fr = d["fr"]
+    px = fr["P"].astype(float)
+    py = fr["S"].astype(float)
+    x_span = float(px.max() - px.min())
+    y_span = float(py.max() - py.min())
+    fig, ax = plt.subplots(figsize=(7.4, 3.2))
+
+    styles = [("batter", NAVY, "o", "Batter"), ("bowler", PINK, "s", "Bowler")]
+    for role, color, marker, label in styles:
+        sub = fr[fr["role"] == role]
         top = sub[sub["rank"] <= 10]
         rest = sub[sub["rank"] > 10]
-        ax.scatter(rest["P"], rest["S"], s=26, facecolors="none",
-                   edgecolors=color, linewidths=0.9, marker=marker,
-                   label=f"{role.capitalize()}s, rank 11-15", alpha=0.7)
-        ax.scatter(top["P"], top["S"], s=46, color=color, marker=marker,
-                   label=f"{role.capitalize()}s, top 10", zorder=3)
-        for _, r in top.head(4).iterrows():
-            ax.annotate(r["player_name"], (r["P"], r["S"]), fontsize=6,
-                        xytext=(3, 3), textcoords="offset points", color=color)
-    ax.set_xlabel("P - pressure-specific component")
-    ax.set_ylabel("S - overall skill component")
-    ax.axhline(0, lw=0.5, color="#999999")
-    ax.axvline(0, lw=0.5, color="#999999")
-    ax.legend(frameon=False, fontsize=6.8, loc="upper left")
-    ax.grid(lw=0.4, alpha=0.3)
-    ax.set_axisbelow(True)
-    for s in ("top", "right"):
-        ax.spines[s].set_visible(False)
+        c_rest = ax.scatter(rest["P"], rest["S"], s=30, facecolors="none",
+                            edgecolors=color, linewidths=0.9, marker=marker,
+                            alpha=0.8, zorder=2,
+                            label=f"{label}s 11-15 (reserve)")
+        c_top = ax.scatter(top["P"], top["S"], s=56, color=color, marker=marker,
+                           edgecolors="white", linewidths=0.6, zorder=3,
+                           label=f"{label}s top 10")
+        for (x, yv), (_, r) in zip(c_rest.get_offsets(), rest.iterrows()):
+            _log("fig_S_vs_P", role, r["player_name"], int(r["rank"]), "P", f"{x:.3f}")
+            _log("fig_S_vs_P", role, r["player_name"], int(r["rank"]), "S", f"{yv:.3f}")
+        for (x, yv), (_, r) in zip(c_top.get_offsets(), top.iterrows()):
+            _log("fig_S_vs_P", role, r["player_name"], int(r["rank"]), "P", f"{x:.3f}")
+            _log("fig_S_vs_P", role, r["player_name"], int(r["rank"]), "S", f"{yv:.3f}")
+
+    # Reference lines at the mean of each component, not at zero ability.
+    ax.axhline(0, lw=0.6, color="#9AA3B2", ls=(0, (4, 3)), zorder=1)
+    ax.axvline(0, lw=0.6, color="#9AA3B2", ls=(0, (4, 3)), zorder=1)
+
+    # Selected leading examples, one label per role rank 1-3. Candidate anchors
+    # are tried in order and the first one that clears every marker and every
+    # label already placed wins; the labels must not sit on the data they name.
+    placed: list[tuple[float, float, float, float]] = []
+    points = list(zip(fr["P"].astype(float), fr["S"].astype(float)))
+    for role, color, marker, label in styles:
+        lead = fr[fr["role"] == role].sort_values("rank").head(3)
+        for _, r in lead.iterrows():
+            text = r["player_name"]
+            tw = 0.0064 * x_span * len(text)
+            th = 0.062 * y_span
+            for dx, dy, ha in ((0.022, 0.045, "left"), (-0.022, 0.045, "right"),
+                               (0.022, -0.045, "left"), (-0.022, -0.045, "right"),
+                               (0.022, 0.090, "left"), (-0.022, 0.090, "right"),
+                               (0.022, -0.095, "left"), (-0.022, -0.095, "right")):
+                x0 = float(r["P"]) + dx * x_span
+                y0 = float(r["S"]) + dy * y_span
+                xa, xb = (x0, x0 + tw) if ha == "left" else (x0 - tw, x0)
+                box = (xa, xb, y0 - th / 2, y0 + th / 2)
+                clear = box[1] <= float(px.max()) + 0.09 * x_span
+                for ox, oy in points:
+                    if box[0] - 0.012 * x_span <= ox <= box[1] + 0.012 * x_span \
+                            and box[2] - th * 0.35 <= oy <= box[3] + th * 0.35:
+                        clear = False
+                        break
+                for b in placed:
+                    if box[0] < b[1] and b[0] < box[1] and box[2] < b[3] and b[2] < box[3]:
+                        clear = False
+                        break
+                if clear:
+                    ax.text(x0, y0, text, fontsize=6.4, color=color, ha=ha,
+                            va="center", zorder=5)
+                    placed.append(box)
+                    break
+
+    # Headroom on the right so the right-most labels clear the plot boundary;
+    # the two right-hand points are labelled leftwards, so this stays modest.
+    ax.set_xlim(float(px.min()) - 0.05 * x_span, float(px.max()) + 0.10 * x_span)
+    ax.set_ylim(float(py.min()) - 0.11 * y_span, float(py.max()) + 0.13 * y_span)
+    ax.set_xlabel("P: pressure-specific value")
+    ax.set_ylabel("S: overall skill")
+    # Two entries only: role is the marker shape. Filled versus hollow is
+    # spelled out in the caption, which keeps the legend off the data.
+    ax.legend(handles=[Line2D([], [], marker="o", linestyle="none", color=NAVY,
+                              ms=5.4, label="Batters"),
+                       Line2D([], [], marker="s", linestyle="none", color=PINK,
+                              ms=5.4, label="Bowlers")],
+              frameon=True, framealpha=0.95, edgecolor="#E3E6EB", fontsize=6.6,
+              loc="upper left", ncol=2, handletextpad=0.35, columnspacing=0.9,
+              borderpad=0.35)
+    _clean_axes(ax)
     fig.tight_layout()
     fig.savefig(path, bbox_inches="tight", facecolor="white")
     plt.close(fig)
@@ -190,46 +316,60 @@ def fig_scatter(d, path: Path) -> Path:
 
 
 def fig_placebo(d, path: Path) -> Path:
+    """Real split against the placebo distribution, eight comparisons."""
     c1 = d["c1"].copy()
     c1["lab"] = (c1["role"].str.capitalize() + "  "
                  + c1["scheme"].str.replace("_", "/") + "  " + c1["metric"])
-    fig, ax = plt.subplots(figsize=(7.0, 3.5))
-    y = range(len(c1))
+    fig, ax = plt.subplots(figsize=(7.0, 3.6))
+    y = list(range(len(c1)))
     h = 0.36
-    ax.barh([i + h / 2 for i in y], c1["real"], height=h, color=PINK, label="Real split")
+    ax.barh([i + h / 2 for i in y], c1["real"], height=h, color=PINK,
+            label="Real split", zorder=2)
     ax.barh([i - h / 2 for i in y], c1["placebo_p95"], height=h,
-            color="#B9C0CC", label="Placebo 95th percentile")
-    x_max = float(max(c1["real"].max(), c1["placebo_p95"].max()))
-    ax.set_xlim(0, x_max * 1.62)
+            color="#B9C0CC", label="Placebo 95th percentile", zorder=2)
+    x_data = float(max(c1["real"].max(), c1["placebo_p95"].max()))
+    x_lim = x_data * 1.52
+    ax.set_xlim(0, x_lim)
     for i, (_, r) in enumerate(c1.iterrows()):
         ax.annotate(f"{r['share_placebo_ge_real']:.2f}",
-                    (x_max * 1.58, i), fontsize=7, va="center", ha="right",
-                    color="#444444")
-    ax.text(x_max * 1.58, -0.85, "share \u2265 real", fontsize=6.8,
-            ha="right", va="center", color="#444444", style="italic")
-    ax.set_yticks(list(y))
+                    (x_lim * 0.985, i), fontsize=7, va="center", ha="right",
+                    color="#333333")
+    ax.text(x_lim * 0.985, -0.95, "share of placebo \u2265 real", fontsize=6.6,
+            ha="right", va="center", color="#333333", style="italic")
+    ax.set_yticks(y)
     ax.set_yticklabels(c1["lab"], fontsize=7.0)
     ax.invert_yaxis()
-    ax.set_xlabel("Spearman rank correlation between split halves")
+    ax.set_xlabel("Spearman correlation between the two halves of the split")
     ax.legend(frameon=False, fontsize=7, loc="lower left",
-              bbox_to_anchor=(0.0, -0.30), ncol=2)
-    ax.grid(axis="x", lw=0.4, alpha=0.3)
-    ax.set_axisbelow(True)
-    for s in ("top", "right"):
-        ax.spines[s].set_visible(False)
+              bbox_to_anchor=(0.0, -0.32), ncol=2)
+    _clean_axes(ax)
     fig.tight_layout()
     fig.savefig(path, bbox_inches="tight", facecolor="white")
     plt.close(fig)
+
+    px = ax.patches
+    n = len(c1)
+    for i, (_, r) in enumerate(c1.iterrows()):
+        _log("fig_placebo", r["role"], f"{r['scheme']} {r['metric']}", "",
+             "real", f"{float(px[i].get_width()):.6f}")
+        _log("fig_placebo", r["role"], f"{r['scheme']} {r['metric']}", "",
+             "placebo_p95", f"{float(px[n + i].get_width()):.6f}")
+        _log("fig_placebo", r["role"], f"{r['scheme']} {r['metric']}", "",
+             "share", f"{r['share_placebo_ge_real']:.2f}")
     return path
 
 
 def build_figures(d) -> dict:
     FIG.mkdir(parents=True, exist_ok=True)
-    return {
+    PLOT_LOG.clear()
+    figs = {
+        "scatter": fig_scatter(d, FIG / "fig_S_vs_P.png"),
         "forest": fig_forest(d, FIG / "fig_rank_intervals.png"),
         "ptop": fig_p_top10(d, FIG / "fig_p_top10.png"),
         "placebo": fig_placebo(d, FIG / "fig_placebo.png"),
     }
+    pd.DataFrame(PLOT_LOG).to_csv(TAB / "report_figure_values.csv", index=False)
+    return figs
 
 
 # ----------------------------------------------------------------- document
@@ -491,7 +631,7 @@ def section_rankings(doc, d) -> None:
 
 
 # ------------------------------------------------------------------ section 3
-def section_data(doc, d) -> None:
+def section_data(doc, d, figs) -> None:
     R.h1(doc, "3", "Data and scope")
 
     R.body(doc, "The input is a proprietary ball-by-ball T20 data pack: 200,999 deliveries "
@@ -598,6 +738,22 @@ def section_data(doc, d) -> None:
                 ["left", "left", "left", "right", "right"])
         R.source_note(doc, "Sources: outputs/final_rankings.csv (competition_exposure) and "
                            "outputs/tables/s7_c3_reruns.csv. Ranks are within role.")
+
+    R.h2(doc, "3.5  Pressure value and overall skill are separate axes")
+    R.figure(doc, figs["scatter"],
+             "Figure 1.  Pressure-specific value (P) against overall skill (S), all 30 ranked "
+             "players.",
+             "Circles are batters and squares are bowlers; filled markers are the published top "
+             "10, hollow markers reserves. P is the pressure-specific component, S overall "
+             "skill; both are centred on zero, so the reference lines mark the average of the "
+             "ranked population, not zero ability. Names are selected leading examples. "
+             "Coordinates read from the P and S columns of "
+             "outputs/final_rankings.csv.")
+
+    R.body(doc, "The cloud is not a tight diagonal. For bowlers the two components are almost "
+                "unrelated, and for batters only weakly related: several players sit in the top "
+                "10 on one component and outside it on the other. The rating combines the "
+                "components with fixed weights rather than rescaling a single skill.")
 
 
 # ------------------------------------------------------------------ section 4
@@ -776,7 +932,7 @@ def section_stability(doc, d, figs) -> None:
 
     R.h2(doc, "5.2  Rank intervals")
     R.figure(doc, figs["forest"],
-             "Figure 1.  Bootstrap rank intervals, top 15 of each role.",
+             "Figure 2.  Bootstrap rank intervals, top 15 of each role.",
              "Dots are the integer bootstrap median rank, which is the ranking key. Bars are "
              "the 2.5th to 97.5th percentile of the resampled rank. Ordered by median rank, "
              "reserves included. Generated from outputs/final_rankings.csv.")
@@ -790,7 +946,7 @@ def section_stability(doc, d, figs) -> None:
                 "data can resolve, and the report does not claim otherwise.")
 
     R.figure(doc, figs["ptop"],
-             "Figure 2.  Share of resamples finishing in the top 10.",
+             "Figure 3.  Share of resamples finishing in the top 10.",
              "Solid bars are the published top 10; pale bars are reserves. Values are read "
              "from the p_top10 column of outputs/final_rankings.csv.")
 
@@ -824,11 +980,6 @@ def section_stability(doc, d, figs) -> None:
                 "large exposure: the two roles' split-half overlaps both retain the leading "
                 "bowlers and the highest-exposure batters.")
 
-    R.body(doc, "Figure 3 in the source brief plotted pressure against overall skill. It is "
-                "omitted here because the same information is legible in the P and S columns of "
-                "section 2: the two components are only weakly related for either role, and no "
-                "player is in the top 10 of one list purely by scaling of the other.")
-
 
 # ------------------------------------------------------------------ section 6
 def section_validation(doc, d, figs) -> None:
@@ -851,14 +1002,18 @@ def section_validation(doc, d, figs) -> None:
     R.source_note(doc, "Source: outputs/tables/s7_c1_placebo.csv. Real is the Spearman "
                        "correlation between the two halves of the real split. Placebo p95 is the "
                        "95th percentile of the same statistic under random splits. Share is the "
-                       "share of placebo replicates that match or beat the real value: a low "
+                       "empirical placebo exceedance share, the share of placebo replicates that "
+                       "match or beat the real value. It is not a formal p-value: no null "
+                       "distribution is assumed and no significance threshold is applied. A low "
                        "share is evidence for the split, a high share is evidence against it.")
 
     R.figure(doc, figs["placebo"],
              "Figure 4.  Real split-half correlation against the placebo distribution.",
-             "Eight comparisons. Bars show the real correlation and the 95th percentile of the "
-             "placebo distribution; the annotation gives the share of placebo replicates that "
-             "match or beat the real value. Two of eight clearly favour the real split.")
+             "Eight comparisons. The bars show the real correlation and the 95th percentile of "
+             "the placebo distribution. The figure at the right of each row is the share of "
+             "placebo replicates that match or beat the real value: lower shares favour the real "
+             "split. Two of eight clearly favour it. These are empirical placebo exceedance "
+             "shares, not formal p-values.")
 
     R.body(doc, "The honest reading is two of eight. Batter consistency under early/late "
                 "splitting (share 0.06) and bowler consistency under odd/even splitting (share "
@@ -1121,7 +1276,7 @@ def build() -> Path:
     contents(doc)
     section_exec(doc, d)
     section_rankings(doc, d)
-    section_data(doc, d)
+    section_data(doc, d, figs)
     section_method(doc, d)
     section_stability(doc, d, figs)
     section_validation(doc, d, figs)

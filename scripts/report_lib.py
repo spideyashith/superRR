@@ -126,10 +126,11 @@ def add_field(paragraph, instruction: str, size=8, color=GREY) -> None:
 
 # ---------------------------------------------------------------- blocks
 def h1(doc, number: str, title: str, *, page_break=True) -> None:
-    if page_break:
-        doc.add_page_break()
     # Real Heading 1 style so Word's table of contents picks the section up.
     para = doc.add_paragraph(style="Heading 1")
+    # A page-break *paragraph* leaves an empty page whenever the previous
+    # section ends within a line of the bottom margin; the attribute does not.
+    para.paragraph_format.page_break_before = bool(page_break)
     para.paragraph_format.space_before = Pt(0)
     para.paragraph_format.space_after = Pt(2)
     para.paragraph_format.keep_with_next = True
