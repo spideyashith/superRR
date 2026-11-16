@@ -1,0 +1,48 @@
+# ---------------------------------------------------------------------------
+# Proprietary data pack — never commit (see data/README.md)
+# ---------------------------------------------------------------------------
+Data Pack/
+__MACOSX/
+
+# ---------------------------------------------------------------------------
+# Derived release artefacts
+# The committed release is superr_selector_s2_release.zip.
+# The extracted tree is reproducible via scripts/build_release_bundle.py.
+# ---------------------------------------------------------------------------
+superr_selector_s2_release/
+src_share.zip
+
+# ---------------------------------------------------------------------------
+# Caches, virtualenvs, tooling
+# ---------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+.ipynb_checkpoints/
+node_modules/
+
+# ---------------------------------------------------------------------------
+# Large / intermediate modelling artefacts (regenerated from the data pack)
+# ---------------------------------------------------------------------------
+scratchpad/
+*.parquet
+*.joblib
+*.npy
+*.npz
+outputs/models/
+outputs/models_backup/
+outputs/checkpoints/
+outputs/backup_*/
+outputs/logs/
+outputs/*.log
+
+# ---------------------------------------------------------------------------
+# Environment and secrets
+# ---------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.pem
+*.key

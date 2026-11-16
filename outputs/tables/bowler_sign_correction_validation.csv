@@ -1,0 +1,13 @@
+check,value,pass
+stage4_apv_is_negative_of_fitted_coef,0.0,True
+stage4_rr_is_apv_minus_apv_ordinary,0.0,True
+raw_con_n_eff_effort_columns_unchanged_max_abs_diff,2.2737367544323206e-13,True
+batter_stage4_tables_identical_to_accepted,0.0,False
+batter_official_ranking_identical_to_accepted,0.0,False
+P_shrunk_raw_apv_max_abs_diff_vs_accepted,9.974659986866641e-17,True
+gate_identical,1.0,True
+official_bowler_top10_overlap,4.0,True
+official_bowler_top15_overlap,7.0,True
+spearman_original_vs_corrected_official_rank,0.5172565062588629,True
+bootstrap_top40_distinct_ids,40.0,True
+bootstrap_n_success,300.0,True

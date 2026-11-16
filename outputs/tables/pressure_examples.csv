@@ -1,0 +1,6 @@
+example,innings,runs_required,balls_remaining,wickets_in_hand,batting_wp,li_raw,li_innings,side_pressure
+First innings: 25/3 after 4 overs,1,,102,7,0.27414327912070996,0.007676725856009788,0.7194351982218998,batter_pressure
+1 run from 3 balls,2,1.0,3,5,0.9926927581352698,0.0061080952661664275,0.29936609227001476,bowler_pressure
+18 runs from 6 balls,2,18.0,6,5,0.5257064448511205,0.10448503697337802,5.120954382075272,bowler_pressure
+"30 runs from 30 balls, 8 wickets in hand",2,30.0,30,8,0.9930104211015206,0.0015028937512485796,0.07365887560733603,bowler_pressure
+"60 runs from 30 balls, 3 wickets in hand",2,60.0,30,3,0.059806527889382524,0.013309746258721805,0.6523288444189158,batter_pressure

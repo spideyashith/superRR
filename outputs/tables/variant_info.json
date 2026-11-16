@@ -1,0 +1,18 @@
+{
+  "variant_A": {
+    "name": "within_innings_quartile",
+    "high_col": "high_q75",
+    "high_count": 45793
+  },
+  "variant_B": {
+    "name": "pooled_continuous_quartile",
+    "high_col": "high_pooled_q75",
+    "high_count": 45792
+  },
+  "variant_C": {
+    "name": "innings2_only_quartile",
+    "high_col": "innings == 2 and li_innings >= innings-2 q75",
+    "high_count": 21936
+  },
+  "note": "Model D (lightgbm_mono) regeneration 2026-11-14. Variant C has zero HIGH balls in innings 1 by definition."
+}

@@ -1,0 +1,5 @@
+player_type,scheme,n_players,cov_raw_apv
+batter,odd_even,171,1.041096494756619e-05
+batter,early_late,126,1.9299232350598854e-05
+bowler,odd_even,194,-7.253580002366022e-06
+bowler,early_late,126,-2.7080784530960913e-06

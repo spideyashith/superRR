@@ -1,0 +1,7 @@
+player_type,component,n_rows,mean_spearman,include
+batter,P,8,0.1245938436227043,True
+batter,C,16,0.15438336740967723,True
+batter,S,8,0.12756685574411916,True
+bowler,P,8,0.12929257504228808,True
+bowler,C,16,0.18295881559853447,True
+bowler,S,8,0.18169504495972658,True

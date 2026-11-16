@@ -1,0 +1,56 @@
+================================================================
+UNSTOPPABLE XI - STABILITY-BASED OFFICIAL RANKING
+================================================================
+Final rank = ascending bootstrap median rank (1000 match resamples).
+Ties broken by higher P(top 10), then higher primary-spec rating.
+Ranks 11-15 are reserves.
+
+BOWLERS - TOP 10:
+----------------------------------------------
+  Rank  1: Rashid Khan                            (ID: 4722) P=3.950, C=1.404, S=3.647, median=1, p_top10=0.989, n_eff=1274, matches=117
+  Rank  2: Sunil Narine                           (ID:  781) P=3.993, C=1.427, S=2.592, median=4, p_top10=0.912, n_eff=754, matches=63
+  Rank  3: Wanindu Hasaranga                      (ID: 4900) P=2.700, C=1.540, S=2.055, median=6, p_top10=0.793, n_eff=884, matches=81
+  Rank  4: Kuldeep Yadav                          (ID: 3644) P=-0.088, C=1.416, S=2.353, median=6, p_top10=0.666, n_eff=865, matches=84
+  Rank  5: Axar Patel                             (ID: 2876) P=1.039, C=0.541, S=2.253, median=7, p_top10=0.669, n_eff=1249, matches=126
+  Rank  6: Bhuvneshwar Kumar                      (ID:  360) P=-0.095, C=0.362, S=2.696, median=7, p_top10=0.589, n_eff=519, matches=94
+  Rank  7: Josh Hazlewood                         (ID:  830) P=0.123, C=1.546, S=1.878, median=11, p_top10=0.485, n_eff=521, matches=57
+  Rank  8: Mark Adair                             (ID: 5379) P=0.169, C=0.748, S=1.928, median=12, p_top10=0.434, n_eff=238, matches=33
+  Rank  9: Jasprit Bumrah                         (ID: 2933) P=0.527, C=0.368, S=1.967, median=13, p_top10=0.406, n_eff=603, matches=69
+  Rank 10: Mujeeb Ur Rahman                       (ID: 6450) P=1.891, C=1.309, S=1.396, median=14, p_top10=0.378, n_eff=342, matches=35
+
+BOWLERS - RESERVES 11-15:
+----------------------------------------------
+  Rank 11: Abrar Ahmed                            (ID: 5979) P=1.915, C=1.835, S=1.160, median=16, p_top10=0.260, n_eff=354, matches=32
+  Rank 12: Shaheen Afridi                         (ID: 6355) P=0.794, C=0.712, S=1.415, median=18, p_top10=0.266, n_eff=263, matches=42
+  Rank 13: Mustafizur Rahman                      (ID: 4373) P=-0.481, C=0.901, S=1.223, median=22, p_top10=0.232, n_eff=682, matches=66
+  Rank 14: Taskin Ahmed                           (ID: 2681) P=1.078, C=1.112, S=1.061, median=22, p_top10=0.143, n_eff=395, matches=43
+  Rank 15: Sikandar Raza                          (ID: 2984) P=2.300, C=0.613, S=0.930, median=22, p_top10=0.131, n_eff=607, matches=50
+
+BATTERS - TOP 10:
+----------------------------------------------
+  Rank  1: Abhishek Sharma                        (ID: 6281) P=1.659, C=2.278, S=3.462, median=3, p_top10=0.858, n_eff=911, matches=94
+  Rank  2: Tim David                              (ID: 6396) P=1.009, C=1.932, S=3.498, median=4, p_top10=0.888, n_eff=332, matches=91
+  Rank  3: Suryakumar Yadav                       (ID: 1699) P=1.393, C=0.865, S=3.314, median=4, p_top10=0.881, n_eff=1258, matches=124
+  Rank  4: Vaibhav Sooryavanshi                   (ID:50284) P=2.552, C=3.459, S=2.483, median=6, p_top10=0.819, n_eff=304, matches=26
+  Rank  5: Phil Salt                              (ID: 5553) P=1.979, C=1.893, S=2.763, median=6, p_top10=0.802, n_eff=612, matches=60
+  Rank  6: Virat Kohli                            (ID:   47) P=1.466, C=1.239, S=2.614, median=6, p_top10=0.769, n_eff=1158, matches=78
+  Rank  7: Jos Buttler                            (ID:  813) P=0.847, C=1.582, S=2.392, median=8, p_top10=0.615, n_eff=959, matches=102
+  Rank  8: Yashasvi Jaiswal                       (ID: 6819) P=1.718, C=1.194, S=2.004, median=10, p_top10=0.517, n_eff=802, matches=57
+  Rank  9: Heinrich Klaasen                       (ID: 4260) P=1.008, C=1.112, S=2.165, median=10, p_top10=0.505, n_eff=507, matches=69
+  Rank 10: Namboori Tilak Varma                   (ID: 7897) P=1.297, C=0.441, S=1.984, median=12, p_top10=0.419, n_eff=884, matches=111
+
+BATTERS - RESERVES 11-15:
+----------------------------------------------
+  Rank 11: Shreyas Iyer                           (ID: 3647) P=1.981, C=0.207, S=1.887, median=13, p_top10=0.394, n_eff=747, matches=86
+  Rank 12: Glenn Maxwell                          (ID:  838) P=0.804, C=0.075, S=2.175, median=13, p_top10=0.394, n_eff=217, matches=64
+  Rank 13: Mitchell Marsh                         (ID:  818) P=0.473, C=1.068, S=1.785, median=15, p_top10=0.281, n_eff=812, matches=70
+  Rank 14: Rinku Singh                            (ID: 4708) P=1.021, C=0.525, S=1.759, median=15, p_top10=0.260, n_eff=240, matches=77
+  Rank 15: Nicholas Pooran                        (ID: 3125) P=0.589, C=0.801, S=1.623, median=16, p_top10=0.281, n_eff=1102, matches=108
+
+================================================================
+TOPS
+================================================================
+
+Top 10 bowlers: Rashid Khan, Sunil Narine, Wanindu Hasaranga, Kuldeep Yadav, Axar Patel, Bhuvneshwar Kumar, Josh Hazlewood, Mark Adair, Jasprit Bumrah, Mujeeb Ur Rahman
+
+Top 10 batters: Abhishek Sharma, Tim David, Suryakumar Yadav, Vaibhav Sooryavanshi, Phil Salt, Virat Kohli, Jos Buttler, Yashasvi Jaiswal, Heinrich Klaasen, Namboori Tilak Varma

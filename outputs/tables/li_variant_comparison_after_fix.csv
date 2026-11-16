@@ -1,0 +1,4 @@
+variant,n_high,pct_high,n_matches,innings1_high,innings2_high
+A_within_innings,45793,25.0007,766,23857,21936
+B_pooled_continuous,45794,25.0012,766,6429,39365
+C_innings2_only,21936,11.976,743,0,21936

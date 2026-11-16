@@ -1,0 +1,3 @@
+player_type,n_train_matches,n_test_matches,n_common,spearman,pearson,top10_overlap
+batter,459,307,54,0.24985706117781584,0.24863215726913385,3
+bowler,459,307,38,0.17671517671517672,0.15924443995869567,3

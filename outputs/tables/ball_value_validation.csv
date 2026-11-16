@@ -1,0 +1,11 @@
+check,value
+rows,183167.0
+duplicate_keys,0.0
+null_y_bat,0.0
+max_abs_li_raw_rebuild_delta,1.1102230246251565e-16
+exp_wpa_finite,183167.0
+p_out_sum_max_abs_dev,3.3306690738754696e-16
+max_abs_y_bowler_plus_y_bat,0.0
+ordinary_median_threshold,0.6868463588971966
+ordinary_weight_sum,91584.0
+weight_C_innings1_max,0.0

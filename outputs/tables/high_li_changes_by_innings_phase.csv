@@ -1,0 +1,7 @@
+innings,phase,orig_high,new_high,remaining,entering,leaving,changed_pct
+1,death,1540,2548,1540,1008,0,4.213
+1,middle,0,0,0,0,0,0.0
+1,powerplay,3047,3881,3047,834,0,2.9052
+2,death,7140,6327,5640,687,1500,12.5972
+2,middle,15067,15993,11797,4196,3270,17.9247
+2,powerplay,19006,17045,14441,2604,4565,24.9539

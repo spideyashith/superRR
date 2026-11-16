@@ -1,0 +1,49 @@
+max |P_corr-P|: 0.0
+max |C_corr-C|: 0.0
+max |S_corr+S|: 0.0
+max |rating_corr - (P+C-S)/3|: 0.0
+
+UNION TOP-20 (sorted by corrected rating desc):
+                player_name  player_id        n_eff  matches  ridge_apv  corr_ridge_apv   raw_apv   orig_rr   corr_rr    orig_P    orig_C    orig_S  orig_rating  orig_rank    corr_P    corr_C    corr_S  corr_rating  corr_rank
+0               Rashid Khan       4722  1274.069354      117  -0.001583        0.001583  0.004503 -0.001472  0.001472  3.950499  1.403857 -3.646848     0.569169         26  3.950499  1.403857  3.646848     3.000401          1
+1              Sunil Narine        781   754.182928       63  -0.001272        0.001272  0.006360 -0.001072  0.001072  3.993052  1.427155 -2.592252     0.942652          7  3.993052  1.427155  2.592252     2.670819          2
+2         Wanindu Hasaranga       4900   884.010381       81  -0.000976        0.000976  0.004269 -0.000709  0.000709  2.700347  1.539714 -2.054884     0.728392         13  2.700347  1.539714  2.054884     2.098315          3
+3             Piyush Chawla         23   416.527599       26  -0.000151        0.000151  0.001812 -0.000070  0.000070  3.697996  1.030887 -0.417031     1.437284          1  3.697996  1.030887  0.417031     1.715305          4
+4               Abrar Ahmed       5979   354.046289       32  -0.000372        0.000372  0.004284 -0.000257  0.000257  1.915385  1.834750 -1.159612     0.863508          3  1.915385  1.834750  1.159612     1.636582          5
+5          Mujeeb Ur Rahman       6450   341.945874       35  -0.000487        0.000487  0.003510 -0.000382  0.000382  1.890672  1.308748 -1.395533     0.601296          6  1.890672  1.308748  1.395533     1.531651          6
+6           Lockie Ferguson       4692   480.506408       51  -0.000843        0.000843  0.003801 -0.000878  0.000878  2.583032  1.024450 -0.492369     1.038371          2  2.583032  1.024450  0.492369     1.366617          7
+7             Sikandar Raza       2984   607.496470       50  -0.000571        0.000571  0.004882 -0.000416  0.000416  2.299872  0.612789 -0.929865     0.660932         16  2.299872  0.612789  0.929865     1.280842          8
+8                Axar Patel       2876  1248.868076      126  -0.001943        0.001943  0.007353 -0.001860  0.001860  1.038590  0.541176 -2.252760    -0.224332         96  1.038590  0.541176  2.252760     1.277509          9
+9             Kuldeep Yadav       3644   865.263500       84  -0.000519        0.000519  0.000781 -0.000329  0.000329 -0.088148  1.415549 -2.353073    -0.341891        115 -0.088148  1.415549  2.353073     1.226825         10
+10            Krunal Pandya       4219   649.028952       62  -0.000591        0.000591  0.003233 -0.000610  0.000610  2.329093  0.133372 -1.134057     0.442803         27  2.329093  0.133372  1.134057     1.198841         11
+11           Josh Hazlewood        830   520.948894       57  -0.001561        0.001561  0.008326 -0.001573  0.001573  0.122749  1.546356 -1.878378    -0.069757         75  0.122749  1.546356  1.878378     1.182494         12
+12                Saim Ayub       7690   294.371496       31  -0.000207        0.000207  0.003352 -0.000187  0.000187  1.292855  1.654870 -0.504666     0.814353          4  1.292855  1.654870  0.504666     1.150797         13
+13             Taskin Ahmed       2681   395.281349       43  -0.000926        0.000926  0.008117 -0.000912  0.000912  1.077991  1.111925 -1.060776     0.376380         12  1.077991  1.111925  1.060776     1.083564         14
+14      Ravichandran Ashwin        305   819.189843       60  -0.000720        0.000720  0.002777 -0.000751  0.000751  2.184407  0.264113 -0.693715     0.584935         18  2.184407  0.264113  0.693715     1.047411         15
+15              Nasum Ahmed       4658   304.216032       26  -0.000385        0.000385  0.008058 -0.000402  0.000402  0.342512  1.936347 -0.683420     0.531813         22  0.342512  1.936347  0.683420     0.987426         16
+16        Bhuvneshwar Kumar        360   519.061986       94  -0.001550        0.001550  0.001786 -0.001556  0.001556 -0.095362  0.361549 -2.695975    -0.809929        116 -0.095362  0.361549  2.695975     0.987387         17
+17           Shaheen Afridi       6355   263.295396       42  -0.000620        0.000620  0.002212 -0.000579  0.000579  0.794387  0.711658 -1.414828     0.030406         32  0.794387  0.711658  1.414828     0.973624         18
+18            Gareth Delany       7741   328.162679       29  -0.000105        0.000105  0.001209 -0.000049  0.000049  0.850532  1.616460 -0.450242     0.672250          5  0.850532  1.616460  0.450242     0.972412         19
+19           Jasprit Bumrah       2933   603.073223       69  -0.001103        0.001103  0.003107 -0.001044  0.001044  0.527405  0.368302 -1.967361    -0.357218         83  0.527405  0.368302  1.967361     0.954356         20
+20               Adam Zampa       2636   577.665466       44  -0.000362        0.000362  0.001434 -0.000339  0.000339  1.031904  0.936357 -0.360534     0.535909         17  1.031904  0.936357  0.360534     0.776265         26
+21  Mohammad Rishad Hossain       8380   442.429948       45  -0.000379        0.000379  0.003308 -0.000404  0.000404  1.221271  0.666660 -0.206506     0.560475          8  1.221271  0.666660  0.206506     0.698145         29
+22              Shadab Khan       4926   422.677542       37  -0.000262        0.000262  0.002698 -0.000258  0.000258  0.527957  1.213159 -0.207375     0.511247         14  0.527957  1.213159  0.207375     0.649497         31
+23           Benjamin Sears       4856   207.702249       16  -0.000069        0.000069 -0.001082 -0.000056  0.000056 -0.315936  1.479241  0.245067     0.469457         11 -0.315936  1.479241 -0.245067     0.306079         46
+24               Obed McCoy       4837   214.374299       30  -0.000806        0.000806  0.005933 -0.000792  0.000792  0.837114  0.498938  0.551088     0.629047          9  0.837114  0.498938 -0.551088     0.261655         48
+25               Haris Rauf       7364   419.857296       44   0.000141       -0.000141 -0.005827  0.000179 -0.000179 -0.588234  1.515291  0.378215     0.435090         19 -0.588234  1.515291 -0.378215     0.182947         54
+26           Mitchell Starc        829   164.163758       33  -0.000932        0.000932  0.010223 -0.000856  0.000856 -0.298026  1.200324  0.456299     0.452866         33 -0.298026  1.200324 -0.456299     0.148666         56
+
+Original top10: ['Abrar Ahmed', 'Gareth Delany', 'Lockie Ferguson', 'Mujeeb Ur Rahman', 'Obed McCoy', 'Piyush Chawla', 'Saim Ayub', 'Sikandar Raza', 'Sunil Narine', 'Wanindu Hasaranga']
+Corrected top10: ['Abrar Ahmed', 'Axar Patel', 'Kuldeep Yadav', 'Lockie Ferguson', 'Mujeeb Ur Rahman', 'Piyush Chawla', 'Rashid Khan', 'Sikandar Raza', 'Sunil Narine', 'Wanindu Hasaranga']
+Intersection top10: ['Abrar Ahmed', 'Lockie Ferguson', 'Mujeeb Ur Rahman', 'Piyush Chawla', 'Sikandar Raza', 'Sunil Narine', 'Wanindu Hasaranga'] count= 7
+Entering: ['Axar Patel', 'Kuldeep Yadav', 'Rashid Khan']
+Leaving: ['Gareth Delany', 'Obed McCoy', 'Saim Ayub']
+Original top15: ['Abrar Ahmed', 'Adam Zampa', 'Gareth Delany', 'Lockie Ferguson', 'Mohammad Rishad Hossain', 'Mujeeb Ur Rahman', 'Nasum Ahmed', 'Obed McCoy', 'Piyush Chawla', 'Rashid Khan', 'Ravichandran Ashwin', 'Saim Ayub', 'Sikandar Raza', 'Sunil Narine', 'Wanindu Hasaranga']
+Corrected top15: ['Abrar Ahmed', 'Axar Patel', 'Josh Hazlewood', 'Krunal Pandya', 'Kuldeep Yadav', 'Lockie Ferguson', 'Mujeeb Ur Rahman', 'Piyush Chawla', 'Rashid Khan', 'Ravichandran Ashwin', 'Saim Ayub', 'Sikandar Raza', 'Sunil Narine', 'Taskin Ahmed', 'Wanindu Hasaranga']
+Intersection top15: ['Abrar Ahmed', 'Lockie Ferguson', 'Mujeeb Ur Rahman', 'Piyush Chawla', 'Rashid Khan', 'Ravichandran Ashwin', 'Saim Ayub', 'Sikandar Raza', 'Sunil Narine', 'Wanindu Hasaranga'] count= 10
+Top15 entering: ['Axar Patel', 'Josh Hazlewood', 'Krunal Pandya', 'Kuldeep Yadav', 'Taskin Ahmed']
+Top15 leaving: ['Adam Zampa', 'Gareth Delany', 'Mohammad Rishad Hossain', 'Nasum Ahmed', 'Obed McCoy']
+Traceback (most recent call last):
+  File "C:\Users\USER\Documents\RR_challange\build_reconciled.py", line 110, in <module>
+    PY
+NameError: name 'PY' is not defined

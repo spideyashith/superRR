@@ -1,0 +1,10 @@
+threshold,min_balls,n_batters_150,n_bowlers_150,n_batters_any,n_bowlers_any
+pooled_quartile,150,97,97,675,526
+innings_quartile,150,97,98,684,533
+innings_tercile,150,127,129,701,540
+innings_LI_gt_1.5,150,23,28,534,426
+innings_LI_gt_2,150,5,8,490,387
+Q75 + 15 inn min,150+15 inn,90,94,90,94
+Tercile + 15 inn min,150+15 inn,119,123,118,123
+LI > 1.5 + 15 inn min,150+15 inn,29,37,29,37
+LI > 2 + 15 inn min,150+15 inn,4,10,4,10

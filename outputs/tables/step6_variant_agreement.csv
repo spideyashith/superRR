@@ -1,0 +1,3 @@
+player_type,n_variants,min_pairwise_spearman,median_pairwise_spearman
+batter,72,0.8220035778175314,0.9310579363710294
+bowler,72,-0.03119989027294605,0.6136540246597173

@@ -1,0 +1,27 @@
+=== IMPACT: top15 bowlers B (original vs corrected) ===
+orig top5 names: ['Tanzim Sakib', 'Anrich Nortje', 'Arshdeep Singh', 'Andre Russell', 'Azmatullah Omarzai']
+corr top5 names: ['Odean Smith', 'Prince Yadav', 'Jaydev Unadkat', 'Prasidh Krishna', 'Shahbaz Ahmed']
+spearman(ridge, raw) original direction: nan
+spearman(-ridge, raw) corrected direction: nan
+spearman(rank_orig, raw_apv): nan
+top10 overlap (orig vs corrected): 0
+top15 overlap (orig vs corrected): 0
+top10 entry (corrected new): [np.int64(7503), np.int64(5379), np.int64(4201), np.int64(2876), np.int64(3720), np.int64(4722), np.int64(6669), np.int64(360), np.int64(830), np.int64(781)]
+top10 corrected names: ['Ravi Bishnoi', 'Mark Adair', 'Fareed Malik', 'Axar Patel', 'Craig Young']
+spearman(original_rank, corrected_rank): nan
+candidate top10 bowlers by corrected rating:
+ player_id  rating_corr  rank
+      4722     2.861857   1.0
+       781     2.261668   2.0
+      4900     1.785068   3.0
+       360     1.696375   4.0
+      2876     1.600348   5.0
+      3644     1.583132   6.0
+      2933     1.354911   7.0
+       830     1.340786   8.0
+      5379     1.308840   9.0
+      6450     1.267012  10.0
+batter candidate file exists (unchanged): True
+n batters: 131
+
+DONE

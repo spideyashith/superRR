@@ -1,0 +1,3 @@
+innings1_model,n_deliveries,n_high,high_share,threshold_pooled_q75,exact_threshold_ties,keys_unique,threshold_population_n,flag_population_n
+logistic_spline,183167,45792,0.2500013648746772,1.0871463111123538,0,True,183167,183167
+lightgbm,183167,45792,0.2500013648746772,1.311389272836879,0,True,183167,183167

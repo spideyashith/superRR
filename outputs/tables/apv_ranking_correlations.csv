@@ -1,0 +1,7 @@
+player_type,variant_1,variant_2,n_common_players,spearman
+batter,B,A,85,0.9891733437561071
+batter,B,C,85,0.9845808090678132
+batter,A,C,85,0.9547000195427008
+bowler,B,A,82,0.995080593376215
+bowler,B,C,82,0.9915325257670249
+bowler,A,C,82,0.9780585757664805

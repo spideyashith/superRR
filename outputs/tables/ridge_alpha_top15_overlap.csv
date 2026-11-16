@@ -1,0 +1,5 @@
+player_type,alpha_compared,top15_overlap,only_1e4,only_other
+batter,1000.0,13,"7897, 47","143, 6819"
+batter,100000.0,13,"50284, 47","1077, 143"
+bowler,1000.0,13,"6464, 4489","5441, 5738"
+bowler,100000.0,14,4840,2261
