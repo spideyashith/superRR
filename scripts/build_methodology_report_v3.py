@@ -1068,7 +1068,7 @@ def section_stability(doc, d, figs) -> None:
 
 # ------------------------------------------------------------------ section 6
 def section_validation(doc, d, figs) -> None:
-    R.h1(doc, "8", "Validation")
+    R.h1(doc, "8", "Validation", page_break=False)
     R.body(doc, "Three independent tests were run against the rating. Each asks a different "
                 "question: does the pressure split beat a meaningless split, does the rating "
                 "predict anything about later matches, and does the ranking survive a change of "
@@ -1439,7 +1439,7 @@ def section_challenges(doc, d) -> None:
             rows, [3.0, 4.6, 5.4, 4.0], ["left", "left", "left", "left"])
 
 def section_rr(doc, d) -> None:
-    R.h1(doc, "9", "Rajasthan Royals selection implications")
+    R.h1(doc, "9", "Rajasthan Royals selection implications", page_break=False)
     R.body(doc, "The rankings should support, not replace, cricketing judgement, role "
                 "requirements and scouting assessment. Translating the results into "
                 "selection insights:")

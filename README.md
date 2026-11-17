@@ -27,7 +27,7 @@ Every methodological decision, including the ones that were reversed, is recorde
 | Report figures | `outputs/figures/` | 9 data figures used by the v3 report: S vs P, rank intervals, P(top 10), placebo, WP calibration, LI by over/wickets, chase heatmap, high-vs-ordinary batting and bowling; the four v2 methodology diagrams are no longer used |
 | Report (v1) | `outputs/Methodology_Report_Final.pdf`, `docs/Methodology_Report_Final.docx` | 16-page methodology report |
 | Report (v2) | `outputs/Methodology_Report_Final_v2.pdf`, `docs/Methodology_Report_Final_v2.docx` | Earlier 29-page report, retained as a backup |
-| **Report (v3)** | `outputs/Methodology_Report_Final_v3.pdf`, `docs/Methodology_Report_Final_v3.docx` | 22-page submission report: cover with team mark, populated contents, problem statement, challenges, rankings, method, validation, RR implications, limitations, conclusion, reproducibility appendix; no methodology diagrams or source labels |
+| **Report (v3)** | `outputs/Methodology_Report_Final_v3.pdf`, `docs/Methodology_Report_Final_v3.docx` | 21-page submission report: cover with team mark, populated contents, problem statement, challenges, rankings, method, validation, RR implications, limitations, conclusion, reproducibility appendix; no methodology diagrams or source labels |
 | Report verifier | `scripts/verify_report_consistency_v3.py` | v3-specific consistency audit (PASS) |
 | Tests | `tests/` | 97 tests across 13 files |
 | Release bundle | `superr_selector_s2_final_release.zip` | 182 files, SHA-256 manifest, 0 mismatches |
