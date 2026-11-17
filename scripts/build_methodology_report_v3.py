@@ -1347,6 +1347,16 @@ def section_problem(doc, d) -> None:
                 "deliverable is a ranked shortlist of ten batters and ten bowlers, plus five "
                 "reserves per role, with evidence to support Rajasthan Royals' selection "
                 "decisions.")
+    R.body(doc, "Conventional aggregates also obscure who created the pressure. A batter's "
+                "runs and a bowler's wickets are recorded in the same way whether they came in "
+                "a dead match or in the last over of a close chase. The method therefore "
+                "separates three questions: how much pressure a player faced, how well they "
+                "performed when it was high, and how good they are overall. Exposure, "
+                "opposition, role and sampling uncertainty are handled explicitly because a "
+                "short T20I record against weak opposition is not comparable to a long IPL "
+                "record against strong attacks. The output is a selection aid, not a forecast: "
+                "it describes what happened in the sample and quantifies how much confidence "
+                "the data support.")
     R.h2(doc, "2.1  Research questions")
     for q in [
         "Which batters generate the greatest value in high-pressure situations?",
@@ -1400,12 +1410,24 @@ def section_challenges(doc, d) -> None:
          "positive bowler contribution.",
          "Sign correction applied exactly once: bowler value = negated centred coefficient.",
          "Resolved; seven tests pin the convention."],
+        ["Small samples and player shrinkage",
+         "A player with few high-leverage balls can post an extreme raw pressure value, and "
+         "bowler between-player variance is close to the noise floor.",
+         "P shrunk toward the population mean using cluster-robust standard errors; "
+         "eligibility requires n_eff >= 150 and at least 15 matches.",
+         "Resolved for eligibility; bowler variance floored at 1e-06 and the remaining "
+         "uncertainty is reported."],
         ["Bootstrap and ranking stability",
          "A single rank is not enough; bowler order is variant-sensitive (min pairwise Spearman "
          "-0.031).",
          "1,000 match-level resamples with replacement, seed 42; median rank, 95% rank "
          "intervals, P(top 10) and P(top 5).",
          "Resolved; intervals are rank intervals, not performance intervals."],
+        ["Stale intermediate outputs",
+         "Some saved comparison columns were frozen against earlier ranking orders.",
+         "Recomputed the competition overlaps against the stability-based final top 10 and "
+         "preserved the historical file unchanged.",
+         "Resolved; the recomputed overlaps are the values quoted in this report."],
         ["Reconciliation and validation",
          "Circular checks, stale comparison flags, frozen outputs.",
          "Independent replay of resamples 0 and 1 with zero mismatches; consistency checker "
