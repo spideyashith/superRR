@@ -4,7 +4,7 @@ A reproducible ranking of T20 batters and bowlers by how reliably they perform w
 the match is at its most decisive, measured against their own normal level rather
 than against raw run or wicket counts.
 
-**Status: all stages 0–8 complete, plus a Stage 7C verification pass (2026-11-15) and the v2 methodology report (2026-11-16).**
+**Status: all stages 0–8 complete, plus a Stage 7C verification pass (2026-11-15) and the v3 methodology report (2026-11-17).**
 `py -m pytest tests/ -q` → **97 passed**. No number in this README, or in any report
 file, is typed by hand: every figure is regenerated from saved outputs.
 
@@ -24,12 +24,13 @@ Every methodological decision, including the ones that were reversed, is recorde
 | Name audit | `outputs/name_check.csv` | Registry name vs ball-by-ball name for all 30 ranked players; no spelling conflicts |
 | Integrity | `outputs/tables/freeze_manifest.csv`, `freeze_manifest_pre_step4.csv`, `official_sign_correction_manifest.csv` | 71 + 7 + 18 rows of SHA-256 hashes with explicit status |
 | Figures | `outputs/figures/*.png` | 15 plots: 5 Stage 7, 4 leverage/LI, 2 WP, 2 expected-vs-actual, 2 high-vs-ordinary |
-| Report figures | `outputs/figures/report/` | 8 report figures: 4 statistical (S vs P, rank intervals, P(top 10), placebo) + 4 methodology diagrams (workflow, pressure/LI, P/C/S, bootstrap) |
+| Report figures | `outputs/figures/` | 9 data figures used by the v3 report: S vs P, rank intervals, P(top 10), placebo, WP calibration, LI by over/wickets, chase heatmap, high-vs-ordinary batting and bowling; the four v2 methodology diagrams are no longer used |
 | Report (v1) | `outputs/Methodology_Report_Final.pdf`, `docs/Methodology_Report_Final.docx` | 16-page methodology report |
-| Report (v2) | `outputs/Methodology_Report_Final_v2.pdf`, `docs/Methodology_Report_Final_v2.docx` | 25-page report: cover, problem statement, challenges, methodology diagrams, conclusion, RR implications, reproducibility appendix |
-| Report verifier | `scripts/verify_report_consistency_v2.py` | 55-check v2-specific consistency audit (PASS) |
+| Report (v2) | `outputs/Methodology_Report_Final_v2.pdf`, `docs/Methodology_Report_Final_v2.docx` | Earlier 29-page report, retained as a backup |
+| **Report (v3)** | `outputs/Methodology_Report_Final_v3.pdf`, `docs/Methodology_Report_Final_v3.docx` | 22-page submission report: cover with team mark, populated contents, problem statement, challenges, rankings, method, validation, RR implications, limitations, conclusion, reproducibility appendix; no methodology diagrams or source labels |
+| Report verifier | `scripts/verify_report_consistency_v3.py` | v3-specific consistency audit (PASS) |
 | Tests | `tests/` | 97 tests across 13 files |
-| Release bundle | `superr_selector_s2_final_release.zip` | 178 files, SHA-256 manifest, 0 mismatches |
+| Release bundle | `superr_selector_s2_final_release.zip` | 182 files, SHA-256 manifest, 0 mismatches |
 
 ## 2. Headline result
 

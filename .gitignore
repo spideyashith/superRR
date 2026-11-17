@@ -14,6 +14,7 @@ src_share.zip
 
 # Page renders produced by scripts/inspect_report_pages.py for visual review
 outputs/report_review/
+outputs/report_review_v3/
 
 # ---------------------------------------------------------------------------
 # Caches, virtualenvs, tooling
