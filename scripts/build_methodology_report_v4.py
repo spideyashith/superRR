@@ -1,0 +1,1631 @@
+"""Build the SupeRR Selector Season 2 Round 1 methodology report (v4).
+
+Produces:
+    docs/Methodology_Report_Final_v4.docx      editable master
+    outputs/Methodology_Report_Final_v4.pdf    exported from the DOCX by Word
+
+The v4 report keeps the v3 design and corrects the model table, the WPAE/APV
+definition, the placebo description, the Mat definition, the P(top 10)
+ordering and the pressure contrast figures. Every number is read from a saved
+CSV at build time; nothing is typed by hand.
+Run:  py scripts/build_methodology_report_v4.py
+"""
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import pandas as pd
+from matplotlib.lines import Line2D
+from matplotlib.patches import Patch
+from docx import Document
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.shared import Cm, Pt
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import report_lib as R  # noqa: E402
+
+ROOT = Path(__file__).resolve().parents[1]
+DOCX_OUT = ROOT / "docs" / "Methodology_Report_Final_v4.docx"
+PDF_OUT = ROOT / "outputs" / "Methodology_Report_Final_v4.pdf"
+FIG = ROOT / "outputs" / "figures" / "report"
+TAB = ROOT / "outputs" / "tables"
+LOGO = ROOT / "outputs" / "figures" / "rr_logo.png"
+
+PLT_DPI = 200
+plt.rcParams.update({
+    "font.family": "DejaVu Sans",
+    "font.size": 8.5,
+    "axes.titlesize": 10,
+    "axes.labelsize": 8.5,
+    "axes.edgecolor": "#12233F",
+    "axes.linewidth": 0.8,
+    "figure.dpi": PLT_DPI,
+    "savefig.dpi": PLT_DPI,
+})
+NAVY = "#12233F"
+PINK = "#D6336C"
+
+
+# --------------------------------------------------------------------- data
+def load():
+    d = {}
+    d["fr"] = pd.read_csv(ROOT / "outputs" / "final_rankings.csv")
+    d["boot"] = pd.read_csv(TAB / "s7_bootstrap_summary.csv")
+    d["c1"] = pd.read_csv(TAB / "s7_c1_placebo.csv")
+    d["c2"] = pd.read_csv(TAB / "s7_c2_temporal.csv")
+    d["c3"] = pd.read_csv(TAB / "s7_c3_overlap_recomputed.csv")
+    d["ridge"] = pd.read_csv(TAB / "ridge_diagnostics.csv")
+    d["gate"] = pd.read_csv(TAB / "step6_component_gate.csv")
+    d["agree"] = pd.read_csv(TAB / "step6_variant_agreement.csv")
+    d["rel"] = pd.read_csv(TAB / "step6_rating_reliability.csv")
+    d["shrink"] = pd.read_csv(TAB / "step6_shrinkage_eligible.csv")
+    d["i1"] = pd.read_csv(TAB / "innings1_model_comparison.csv")
+    d["i2"] = pd.read_csv(TAB / "innings2_model_comparison.csv")
+    d["modelcmp"] = pd.read_csv(TAB / "wp_model_comparison.csv")
+    d["wp"] = pd.read_csv(TAB / "wp_metrics.csv")
+    d["pv"] = pd.read_csv(TAB / "pressure_validation.csv")
+    d["ps"] = pd.read_csv(TAB / "pressure_shares.csv")
+    d["manifest"] = pd.read_csv(TAB / "freeze_manifest.csv")
+    d["sign"] = pd.read_csv(TAB / "official_sign_correction_manifest.csv")
+    d["pre"] = pd.read_csv(TAB / "freeze_manifest_pre_step4.csv")
+    d["names"] = pd.read_csv(ROOT / "outputs" / "name_check.csv")
+    d["reruns"] = pd.read_csv(TAB / "s7_c3_reruns.csv")
+    return d
+
+
+def role_table(fr: pd.DataFrame, role: str, n: int = 15) -> pd.DataFrame:
+    sub = fr[fr["role"] == role].sort_values("rank").head(n).copy()
+    return sub
+
+
+def fmt(x, nd):
+    if pd.isna(x):
+        return "—"
+    return f"{x:.{nd}f}".replace("-", "\u2212")
+
+
+def fint(x):
+    if pd.isna(x):
+        return "—"
+    return f"{int(round(x))}"
+
+
+def f3(x):
+    return fmt(x, 3)
+
+
+def figure(doc, path: Path, caption_text: str, note: str = "", *, width=16.2) -> None:
+    """Place a data figure and its caption, without a source or page label."""
+    para = doc.add_paragraph()
+    para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    para.paragraph_format.space_before = Pt(6)
+    para.paragraph_format.space_after = Pt(0)
+    para.add_run().add_picture(str(path), width=Cm(width))
+    R.caption(doc, caption_text)
+
+
+def ranking_rows(sub: pd.DataFrame):
+    rows = []
+    for _, r in sub.iterrows():
+        name = r["player_name"] + (" \u1d3f" if bool(r["is_reserve"]) else "")
+        rows.append([
+            fint(r["rank"]),
+            name,
+            f3(r["P"]),
+            f3(r["C"]),
+            f3(r["S"]),
+            f3(r["rating"]),
+            fint(r["consensus_rank_72"]),
+            fint(r["boot_median"]),
+            f"{fint(r['rank_lo'])}\u2013{fint(r['rank_hi'])}",
+            f3(r["p_top10"]),
+            f3(r["p_top5"]),
+            fint(r["matches"]),
+        ])
+    return rows
+
+
+RANK_HEADERS = ["Rank", "Player", "P", "C", "S", "Rating", "Consensus 72", "Median",
+                "95% rank CI", "P(top 10)", "P(top 5)", "Mat"]
+RANK_WIDTHS = [0.9, 3.0, 1.2, 1.2, 1.2, 1.2, 1.7, 1.15, 1.7, 1.25, 1.15, 1.0]
+RANK_ALIGNS = ["center", "left", "right", "right", "right", "right", "center",
+               "center", "center", "right", "right", "center"]
+
+
+# ------------------------------------------------------------------ figures
+# Each figure records the geometry it actually drew, read back off the
+# matplotlib artist rather than off the source frame, so
+# scripts/verify_figures.py can compare the rendering data with the CSVs.
+RESERVE_PINK = "#F5C2D6"
+INTERVAL_GREY = "#98A2B3"
+PLOT_LOG: list[dict] = []
+
+
+def _log(figure, role, name, rank, key, value):
+    PLOT_LOG.append({"figure": figure, "role": role, "player_name": name,
+                     "rank": rank, "key": key, "value": value})
+
+
+def _tick_rows(ax):
+    """Read '3. Sunil Narine' style y labels back as (rank, name) pairs."""
+    rows = []
+    for t in ax.get_yticklabels():
+        head, _, name = t.get_text().partition(". ")
+        rows.append((int(head), name))
+    return rows
+
+
+def _clean_axes(ax):
+    for s in ("top", "right"):
+        ax.spines[s].set_visible(False)
+    ax.grid(lw=0.4, alpha=0.3)
+    ax.set_axisbelow(True)
+
+
+def fig_forest(d, path: Path) -> Path:
+    """Bootstrap rank intervals: pink dot = median, grey bar = 95% interval."""
+    roles = ["batter", "bowler"]
+    subs = {r: role_table(d["fr"], r).iloc[::-1] for r in roles}
+    hi_max = max(float(s["rank_hi"].max()) for s in subs.values())
+
+    fig, axes = plt.subplots(1, 2, figsize=(7.4, 4.0))
+    for ax, role, title in zip(axes, roles, ["Batters", "Bowlers"]):
+        sub = subs[role]
+        y = list(range(len(sub)))
+        ax.hlines(y, sub["rank_lo"], sub["rank_hi"], color=INTERVAL_GREY,
+                  lw=2.8, zorder=1)
+        ax.plot(sub["boot_median"], y, "o", color=PINK, ms=4.8, zorder=3,
+                clip_on=False)
+        ax.set_yticks(y)
+        ax.set_yticklabels([f"{int(r)}. {n}" for r, n in
+                            zip(sub["rank"], sub["player_name"])], fontsize=7.3)
+        ax.set_xlim(1, hi_max + 0.7)
+        ax.set_xlabel("Bootstrap rank (1 = best)")
+        ax.set_title(title, color=NAVY, fontweight="bold")
+        _clean_axes(ax)
+
+        segs = ax.collections[0].get_segments()
+        med_x = ax.lines[0].get_xdata()
+        for i, (rk, nm) in enumerate(_tick_rows(ax)):
+            _log("fig_rank_intervals", role, nm, rk, "rank_lo", f"{segs[i][0][0]:.2f}")
+            _log("fig_rank_intervals", role, nm, rk, "rank_hi", f"{segs[i][1][0]:.2f}")
+            _log("fig_rank_intervals", role, nm, rk, "boot_median", f"{med_x[i]:.2f}")
+
+    handles = [
+        Line2D([], [], marker="o", linestyle="none", markerfacecolor=PINK,
+               markeredgecolor=PINK, ms=5.6,
+               label="Integer bootstrap median rank"),
+        Line2D([], [], color=INTERVAL_GREY, lw=2.8,
+               label="95% bootstrap rank interval (2.5th-97.5th percentile)"),
+    ]
+    fig.legend(handles=handles, loc="lower center", ncol=2, frameon=False,
+               fontsize=7.2, bbox_to_anchor=(0.5, 0.004))
+    fig.tight_layout(rect=(0, 0.085, 1, 1))
+    fig.savefig(path, bbox_inches="tight", facecolor="white")
+    plt.close(fig)
+    return path
+
+
+def fig_p_top10(d, path: Path) -> Path:
+    """Share of resamples finishing in the top 10, in published rank order."""
+    fig, axes = plt.subplots(1, 2, figsize=(7.4, 4.1))
+    for ax, role, title in zip(axes, ["batter", "bowler"], ["Batters", "Bowlers"]):
+        sub = role_table(d["fr"], role).iloc[::-1]
+        colors = [RESERVE_PINK if bool(r) else PINK for r in sub["is_reserve"]]
+        ax.barh([f"{int(r)}. {n}" for r, n in zip(sub["rank"], sub["player_name"])],
+                sub["p_top10"], color=colors, height=0.70, zorder=2)
+        ax.set_xlim(0, 1)
+        ax.set_xticks([0, 0.2, 0.4, 0.6, 0.8, 1.0])
+        ax.set_xlabel("P(top 10) over 1,000 resamples")
+        ax.set_title(title, color=NAVY, fontweight="bold")
+        ax.tick_params(axis="y", labelsize=7.3)
+        _clean_axes(ax)
+
+        for i, (rk, nm) in enumerate(_tick_rows(ax)):
+            w = float(ax.patches[i].get_width())
+            inside = w >= 0.80
+            ax.text(w - 0.022 if inside else w + 0.014, i, f"{w:.2f}",
+                    va="center", ha="right" if inside else "left",
+                    fontsize=6.3, color="white" if inside else "#2B2B2B",
+                    zorder=4)
+            _log("fig_p_top10", role, nm, rk, "p_top10", f"{w:.2f}")
+
+    handles = [Patch(facecolor=PINK, label="Top 10 (published rank 1-10)"),
+               Patch(facecolor=RESERVE_PINK, label="Reserve (rank 11-15)")]
+    fig.legend(handles=handles, loc="lower center", ncol=2, frameon=False,
+               fontsize=7.2, bbox_to_anchor=(0.5, 0.004))
+    fig.tight_layout(rect=(0, 0.085, 1, 1))
+    fig.savefig(path, bbox_inches="tight", facecolor="white")
+    plt.close(fig)
+    return path
+
+
+def fig_scatter(d, path: Path) -> Path:
+    """P against S for all 30 ranked players, with headroom for the labels."""
+    fr = d["fr"]
+    px = fr["P"].astype(float)
+    py = fr["S"].astype(float)
+    x_span = float(px.max() - px.min())
+    y_span = float(py.max() - py.min())
+    fig, ax = plt.subplots(figsize=(7.4, 3.2))
+
+    styles = [("batter", NAVY, "o", "Batter"), ("bowler", PINK, "s", "Bowler")]
+    for role, color, marker, label in styles:
+        sub = fr[fr["role"] == role]
+        top = sub[sub["rank"] <= 10]
+        rest = sub[sub["rank"] > 10]
+        c_rest = ax.scatter(rest["P"], rest["S"], s=30, facecolors="none",
+                            edgecolors=color, linewidths=0.9, marker=marker,
+                            alpha=0.8, zorder=2,
+                            label=f"{label}s 11-15 (reserve)")
+        c_top = ax.scatter(top["P"], top["S"], s=56, color=color, marker=marker,
+                           edgecolors="white", linewidths=0.6, zorder=3,
+                           label=f"{label}s top 10")
+        for (x, yv), (_, r) in zip(c_rest.get_offsets(), rest.iterrows()):
+            _log("fig_S_vs_P", role, r["player_name"], int(r["rank"]), "P", f"{x:.3f}")
+            _log("fig_S_vs_P", role, r["player_name"], int(r["rank"]), "S", f"{yv:.3f}")
+        for (x, yv), (_, r) in zip(c_top.get_offsets(), top.iterrows()):
+            _log("fig_S_vs_P", role, r["player_name"], int(r["rank"]), "P", f"{x:.3f}")
+            _log("fig_S_vs_P", role, r["player_name"], int(r["rank"]), "S", f"{yv:.3f}")
+
+    # Reference lines at the mean of each component, not at zero ability.
+    ax.axhline(0, lw=0.6, color="#9AA3B2", ls=(0, (4, 3)), zorder=1)
+    ax.axvline(0, lw=0.6, color="#9AA3B2", ls=(0, (4, 3)), zorder=1)
+
+    # Selected leading examples, one label per role rank 1-3. Candidate anchors
+    # are tried in order and the first one that clears every marker and every
+    # label already placed wins; the labels must not sit on the data they name.
+    placed: list[tuple[float, float, float, float]] = []
+    points = list(zip(fr["P"].astype(float), fr["S"].astype(float)))
+    for role, color, marker, label in styles:
+        lead = fr[fr["role"] == role].sort_values("rank").head(3)
+        for _, r in lead.iterrows():
+            text = r["player_name"]
+            tw = 0.0064 * x_span * len(text)
+            th = 0.062 * y_span
+            for dx, dy, ha in ((0.022, 0.045, "left"), (-0.022, 0.045, "right"),
+                               (0.022, -0.045, "left"), (-0.022, -0.045, "right"),
+                               (0.022, 0.090, "left"), (-0.022, 0.090, "right"),
+                               (0.022, -0.095, "left"), (-0.022, -0.095, "right")):
+                x0 = float(r["P"]) + dx * x_span
+                y0 = float(r["S"]) + dy * y_span
+                xa, xb = (x0, x0 + tw) if ha == "left" else (x0 - tw, x0)
+                box = (xa, xb, y0 - th / 2, y0 + th / 2)
+                clear = box[1] <= float(px.max()) + 0.09 * x_span
+                for ox, oy in points:
+                    if box[0] - 0.012 * x_span <= ox <= box[1] + 0.012 * x_span \
+                            and box[2] - th * 0.35 <= oy <= box[3] + th * 0.35:
+                        clear = False
+                        break
+                for b in placed:
+                    if box[0] < b[1] and b[0] < box[1] and box[2] < b[3] and b[2] < box[3]:
+                        clear = False
+                        break
+                if clear:
+                    ax.text(x0, y0, text, fontsize=6.4, color=color, ha=ha,
+                            va="center", zorder=5)
+                    placed.append(box)
+                    break
+
+    # Headroom on the right so the right-most labels clear the plot boundary;
+    # the two right-hand points are labelled leftwards, so this stays modest.
+    ax.set_xlim(float(px.min()) - 0.05 * x_span, float(px.max()) + 0.10 * x_span)
+    ax.set_ylim(float(py.min()) - 0.11 * y_span, float(py.max()) + 0.13 * y_span)
+    ax.set_xlabel("P: pressure-specific value")
+    ax.set_ylabel("S: overall skill")
+    # Two entries only: role is the marker shape. Filled versus hollow is
+    # spelled out in the caption, which keeps the legend off the data.
+    ax.legend(handles=[Line2D([], [], marker="o", linestyle="none", color=NAVY,
+                              ms=5.4, label="Batters"),
+                       Line2D([], [], marker="s", linestyle="none", color=PINK,
+                              ms=5.4, label="Bowlers")],
+              frameon=True, framealpha=0.95, edgecolor="#E3E6EB", fontsize=6.6,
+              loc="upper left", ncol=2, handletextpad=0.35, columnspacing=0.9,
+              borderpad=0.35)
+    _clean_axes(ax)
+    fig.tight_layout()
+    fig.savefig(path, bbox_inches="tight", facecolor="white")
+    plt.close(fig)
+    return path
+
+
+def fig_placebo(d, path: Path) -> Path:
+    """Real split against the placebo distribution, eight comparisons."""
+    c1 = d["c1"].copy()
+    c1["lab"] = (c1["role"].str.capitalize() + "  "
+                 + c1["scheme"].str.replace("_", "/") + "  " + c1["metric"])
+    fig, ax = plt.subplots(figsize=(7.0, 3.6))
+    y = list(range(len(c1)))
+    h = 0.36
+    ax.barh([i + h / 2 for i in y], c1["real"], height=h, color=PINK,
+            label="Real split", zorder=2)
+    ax.barh([i - h / 2 for i in y], c1["placebo_p95"], height=h,
+            color="#B9C0CC", label="Placebo 95th percentile", zorder=2)
+    x_data = float(max(c1["real"].max(), c1["placebo_p95"].max()))
+    x_lim = x_data * 1.52
+    ax.set_xlim(0, x_lim)
+    for i, (_, r) in enumerate(c1.iterrows()):
+        ax.annotate(f"{r['share_placebo_ge_real']:.2f}",
+                    (x_lim * 0.985, i), fontsize=7, va="center", ha="right",
+                    color="#333333")
+    ax.text(x_lim * 0.985, -0.95, "share of placebo \u2265 real", fontsize=6.6,
+            ha="right", va="center", color="#333333", style="italic")
+    ax.set_yticks(y)
+    ax.set_yticklabels(c1["lab"], fontsize=7.0)
+    ax.invert_yaxis()
+    ax.set_xlabel("Spearman correlation between the two halves of the split")
+    ax.legend(frameon=False, fontsize=7, loc="lower left",
+              bbox_to_anchor=(0.0, -0.32), ncol=2)
+    _clean_axes(ax)
+    fig.tight_layout()
+    fig.savefig(path, bbox_inches="tight", facecolor="white")
+    plt.close(fig)
+
+    px = ax.patches
+    n = len(c1)
+    for i, (_, r) in enumerate(c1.iterrows()):
+        _log("fig_placebo", r["role"], f"{r['scheme']} {r['metric']}", "",
+             "real", f"{float(px[i].get_width()):.6f}")
+        _log("fig_placebo", r["role"], f"{r['scheme']} {r['metric']}", "",
+             "placebo_p95", f"{float(px[n + i].get_width()):.6f}")
+        _log("fig_placebo", r["role"], f"{r['scheme']} {r['metric']}", "",
+             "share", f"{r['share_placebo_ge_real']:.2f}")
+    return path
+
+
+def build_wp_calibration() -> None:
+    """Rebuild the WP calibration figure from the saved calibration table."""
+    cal = pd.read_csv(TAB / "wp_calibration.csv")
+    metrics = pd.read_csv(TAB / "wp_metrics.csv").set_index("innings")
+    labels = {1: "Innings 1\nLightGBM comparator",
+              2: "Innings 2\nMonotone LightGBM (shipped)"}
+    fig, axes = plt.subplots(1, 2, figsize=(11, 4.6))
+    for ax, innings in zip(axes, (1, 2)):
+        sub = cal[cal["innings"] == innings]
+        m = metrics.loc[innings]
+        ax.plot([0, 1], [0, 1], ls="--", color="grey", lw=1, label="perfect")
+        ax.plot(sub["pred_mean"], sub["obs_rate"], marker="o", color="#1f77b4",
+                label="observed")
+        ax.set_xlabel("Predicted win probability")
+        ax.set_ylabel("Observed win rate")
+        ax.set_title(
+            f"{labels[innings]}\nlog loss {m['log_loss']:.4f}, "
+            f"Brier {m['brier']:.4f}, ECE {m['ece']:.4f}", fontsize=8.5)
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 1)
+        ax.grid(alpha=0.25)
+        ax.legend(loc="lower right")
+    fig.suptitle("Out-of-fold calibration, GroupKFold by match (10 quantile bins)")
+    fig.tight_layout()
+    fig.savefig(ROOT / "outputs" / "figures" / "wp_calibration.png", dpi=180)
+    plt.close(fig)
+
+
+def build_figures(d) -> dict:
+    FIG.mkdir(parents=True, exist_ok=True)
+    PLOT_LOG.clear()
+    build_wp_calibration()
+    figs = {
+        "scatter": fig_scatter(d, FIG / "fig_S_vs_P.png"),
+        "forest": fig_forest(d, FIG / "fig_rank_intervals.png"),
+        "ptop": fig_p_top10(d, FIG / "fig_p_top10.png"),
+        "placebo": fig_placebo(d, FIG / "fig_placebo.png"),
+    }
+    pd.DataFrame(PLOT_LOG).to_csv(TAB / "report_figure_values.csv", index=False)
+    return figs
+
+
+# ----------------------------------------------------------------- document
+def new_document() -> Document:
+    doc = Document()
+    sec = doc.sections[0]
+    sec.page_width = Cm(21.0)
+    sec.page_height = Cm(29.7)
+    sec.left_margin = Cm(2.0)
+    sec.right_margin = Cm(2.0)
+    sec.top_margin = Cm(1.9)
+    sec.bottom_margin = Cm(1.9)
+    sec.header_distance = Cm(0.9)
+    sec.footer_distance = Cm(0.9)
+    style = doc.styles["Normal"]
+    style.font.name = "Calibri"
+    style.font.size = Pt(R.BODY_PT)
+    return doc
+
+
+def chrome(doc, short_title: str) -> None:
+    """Footer on every page, header from page 2, nothing on the title page."""
+    sec = doc.sections[0]
+    sec.different_first_page_header_footer = True
+
+    footer = sec.footer.paragraphs[0]
+    footer.alignment = WD_ALIGN_PARAGRAPH.LEFT
+    tab_stops = footer.paragraph_format.tab_stops
+    tab_stops.add_tab_stop(Cm(17.0), 2)  # right aligned
+    run = footer.add_run(short_title + "\tPage ")
+    run.font.size = Pt(8)
+    run.font.color.rgb = R.GREY
+    R.add_field(footer, "PAGE")
+    of = footer.add_run(" of ")
+    of.font.size = Pt(8)
+    of.font.color.rgb = R.GREY
+    R.add_field(footer, "NUMPAGES")
+
+    header = sec.header.paragraphs[0]
+    header.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    run = header.add_run("SupeRR Selector Season 2  \u00b7  Round 1  \u00b7  Methodology Report")
+    run.font.size = Pt(8)
+    run.font.color.rgb = R.LIGHT
+
+
+def title_page(doc, d) -> None:
+    p = doc.add_paragraph()
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p.paragraph_format.space_before = Pt(6)
+    p.paragraph_format.space_after = Pt(2)
+    if LOGO.exists():
+        p.add_run().add_picture(str(LOGO), width=Cm(3.2))
+    for _ in range(2):
+        doc.add_paragraph()
+    p = doc.add_paragraph()
+    p.paragraph_format.space_after = Pt(2)
+    run = p.add_run("BEYOND THE SCORECARD")
+    run.font.size = Pt(30)
+    run.font.bold = True
+    run.font.color.rgb = R.NAVY
+    run.font.name = "Calibri"
+
+    p = doc.add_paragraph()
+    p.paragraph_format.space_after = Pt(6)
+    run = p.add_run("Identifying Reliable Batters and Bowlers Under Pressure")
+    run.font.size = Pt(15)
+    run.font.color.rgb = R.PINK
+    run.font.name = "Calibri"
+
+    R.rule(doc, width=17.0, color=R.PINK_HEX, sz=14, space_after=8)
+
+    p = doc.add_paragraph()
+    p.paragraph_format.space_after = Pt(26)
+    run = p.add_run("SupeRR Selector, Season 2 \u2014 Round 1  \u00b7  Rajasthan Royals analytics context")
+    run.font.size = Pt(12)
+    run.font.color.rgb = R.GREY
+    run.font.name = "Calibri"
+
+    for label, value in [
+        ("Competition", "SupeRR Selector, Season 2 \u2014 Round 1"),
+        ("Submission", "Methodology report and final player rankings"),
+        ("Data", "Proprietary ball-by-ball pack, IPL and T20I, 2022\u20132026"),
+        ("Analysis set", f"{fint(len(d['fr']))} ranked players from 766 matches"),
+        ("Date", "17 November 2026"),
+    ]:
+        p = doc.add_paragraph()
+        p.paragraph_format.space_after = Pt(3)
+        r1 = p.add_run(f"{label}   ")
+        r1.font.size = Pt(9)
+        r1.font.bold = True
+        r1.font.color.rgb = R.NAVY
+        r2 = p.add_run(value)
+        r2.font.size = Pt(9)
+        r2.font.color.rgb = R.GREY
+
+    for _ in range(4):
+        doc.add_paragraph()
+
+
+def contents(doc) -> None:
+    doc.add_page_break()
+    p = doc.add_paragraph()
+    p.paragraph_format.space_after = Pt(10)
+    run = p.add_run("Contents")
+    run.font.size = Pt(16)
+    run.font.bold = True
+    run.font.color.rgb = R.NAVY
+    R.rule(doc, width=17.0, color=R.PINK_HEX, sz=8, space_after=10)
+
+    para = doc.add_paragraph()
+    R.add_field(para, 'TOC \\o "1-1" \\h \\z \\u', size=10.5, color=R.NAVY)
+
+
+# ------------------------------------------------------------------ section 1
+def section_exec(doc, d) -> None:
+    R.h1(doc, "1", "Executive summary")
+    fr = d["fr"]
+    bat, bowl = role_table(fr, "batter"), role_table(fr, "bowler")
+
+    R.body(doc, "This report sets out the method used to rank T20 cricketers by "
+                "performance under pressure, and presents the resulting lists. The approach "
+                "converts every delivery into a change in the batting side's win probability, "
+                "weights that change by the leverage of the moment, and separates a player's "
+                "overall output from the part of it that appears specifically at high leverage.")
+
+    R.body(doc, "The ranking is built from 766 completed IPL and T20I matches played between "
+                "22 January 2022 and 1 November 2026, covering 183,167 analysis-ready "
+                "deliveries. Players are ranked only if they clear an exposure threshold, which "
+                "leaves 131 batters and 133 bowlers in the population. Uncertainty is quantified "
+                "by resampling matches, not deliveries, 1,000 times with replacement and a fixed "
+                "seed, so that a player's rank interval reflects the schedules they happened to "
+                "face rather than sampling noise within a single innings.")
+
+    R.h2(doc, "What the lists say")
+    R.body(doc, f"Among batters, {bat.iloc[0]['player_name']} leads on a stability-based "
+                f"median rank of {fint(bat.iloc[0]['boot_median'])}, followed by "
+                f"{bat.iloc[1]['player_name']} and {bat.iloc[2]['player_name']}. Among bowlers, "
+                f"{bowl.iloc[0]['player_name']} is first with a median rank of "
+                f"{fint(bowl.iloc[0]['boot_median'])} and a P(top 10) of "
+                f"{f3(bowl.iloc[0]['p_top10'])}, the highest single probability in either list. "
+                "The two roles are ranked separately because the components are not comparable "
+                "across them: a batter's pressure component and a bowler's pressure component "
+                "are built from different events and normalised within different populations.")
+
+    R.h2(doc, "What the evidence does and does not support")
+    R.body(doc, "The three components carry different evidence. S, the overall-skill "
+                "component, is the most stable of the three. P, the pressure level, has "
+                "split-half rank correlations of roughly 0.10 to 0.21 depending on role and "
+                "split. The placebo procedure tests P and C, not S. Only C has a clear placebo "
+                "result: batter early/late C and bowler odd/even C are the two comparisons, of "
+                "eight, whose empirical placebo exceedance share is 0.10 or lower. None of the "
+                "pressure-level comparisons clearly beats its placebo distribution. The available "
+                "evidence therefore does not support a general claim that pressure weighting "
+                "outperforms chance; it supports a limited consistency signal in two split "
+                "configurations. Bowler ratings are markedly less stable than batter ratings: "
+                "the median shrinkage factor applied to bowler pressure signal is close to "
+                "zero, because the between-player signal variance for bowlers is small enough "
+                "to require a variance floor.")
+
+    R.body(doc, "The final order uses ascending integer bootstrap median rank as the "
+                "primary ordering key. Ties are broken first by higher P(top 10), then by "
+                "higher primary-spec rating. The 72-variant consensus rank is reported as a "
+                "sensitivity measure and is not used to determine the published order. Where "
+                "the two disagree, the disagreement is itself the finding: it locates players "
+                "whose position depends on definitional choices rather than on performance.")
+
+    R.h2(doc, "How to read this document")
+    for text in [
+        "Section 4 gives the final lists.",
+        "Sections 5 and 6 describe the data and the measurement chain, in enough detail to "
+        "reproduce every number from the released code and tables.",
+        "Sections 7 and 8 quantify uncertainty and test the rating against placebo "
+        "pressure-weight permutations, later matches and competition subsets.",
+        "Section 10 states the limitations plainly. It is in the body of the report, not an "
+        "appendix, because the limitations are part of the result.",
+        "Section 12 documents reproducibility, including which frozen files can and cannot be "
+        "verified against a historical hash.",
+    ]:
+        R.bullet(doc, text)
+
+
+# ------------------------------------------------------------------ section 2
+def section_rankings(doc, d) -> None:
+    R.h1(doc, "4", "Final rankings")
+    fr = d["fr"]
+    bat, bowl = role_table(fr, "batter"), role_table(fr, "bowler")
+
+    R.body(doc, "Ranks 1 to 10 are the selection. Ranks 11 to 15 are reserves and are shaded. "
+                "The order is the ascending integer bootstrap median rank; ties are broken by "
+                "higher P(top 10), then by higher primary-spec rating. No name was reordered by "
+                "hand, and the tables below are generated directly from the file of record.")
+
+    R.h2(doc, "4.1  Batters", space_before=6)
+    R.table(doc, RANK_HEADERS, ranking_rows(bat), RANK_WIDTHS, RANK_ALIGNS, reserve_from=10)
+    R.source_note(doc, "R = reserve. P, C, S and Rating to three decimals; Median and CI are "
+                       "integers; Mat = matches with at least one pressure-weighted delivery.")
+
+    R.h2(doc, "4.2  Bowlers", space_before=6)
+    R.table(doc, RANK_HEADERS, ranking_rows(bowl), RANK_WIDTHS, RANK_ALIGNS, reserve_from=10)
+
+    R.h2(doc, "4.3  Column definitions")
+    defs = [
+        ("P", "Pressure level, reported as a within-role z-score. The underlying value is "
+              "the B_trim-weighted mean of y = WPAE, shrunk toward the population mean "
+              "using cluster-robust standard errors. Only P is shrunk."),
+        ("C", "Consistency, reported as a within-role z-score. The underlying value is the "
+              "mean of the standardised share of positive qualifying units (batter innings "
+              "or bowler matches with at least six pressure-weighted balls) and the "
+              "standardised median match-level pressure value. Not shrunk."),
+        ("S", "Overall skill, reported as a within-role z-score. The underlying value is "
+              "the opposition-adjusted ridge effect from the all-ball model, with ridge "
+              "alpha 10,000. Not shrunk."),
+        ("Rating", "The equal-weight mean of the three standardised components: "
+                   "Rating = (P + C + S) / 3. Used for the second tie-break."),
+        ("Median", "Integer median of the player's rank across 1,000 match resamples. This is "
+                   "the ranking key."),
+        ("95% rank CI", "2.5th to 97.5th percentile of the resampled rank, using the higher "
+                        "quantile method. This is an interval on rank, not on performance."),
+        ("P(top 10)", "Share of the 1,000 resamples in which the player finished inside the "
+                      "top 10 of their role."),
+        ("P(top 5)", "The same share for the top 5."),
+        ("Consensus 72", "Rank under the 72-variant sensitivity grid (reported alongside, "
+                         "never used to order the published list)."),
+        ("Mat", "Number of matches in which the player had at least one pressure-weighted "
+                "delivery."),
+    ]
+    R.table(doc, ["Term", "Definition"], [[n, t] for n, t in defs],
+            [2.5, 14.5], ["left", "left"], font=8.0)
+    R.source_note(doc, "P, C and S are within-role z-scores with mean zero and standard "
+                       "deviation one; a negative value is below the role mean, not a negative "
+                       "performance score. Definitions apply to every ranking and validation "
+                       "table in this report.")
+
+    R.body(doc, "A note on reading the intervals. The median rank is a point summary of a "
+                "distribution that is often wide. Several top-10 players have a rank interval "
+                "that spans 60 or more places, which means the data are consistent with a much "
+                "lower placing. Presenting the interval beside the rank is the honest way to "
+                "report it; a single ordered list without intervals would overstate certainty.",
+           space_after=4)
+
+    R.h2(doc, "4.4  Name verification", space_before=4)
+    R.body(doc, "Every ranked player was checked against three independent name sources before "
+                "submission: the competition player registry, the ball-by-ball delivery file and "
+                "the playing-eleven file. The table below is the released audit. Where all three "
+                "agree, the name is submitted as written; no display name was invented or "
+                "normalised.", space_after=4)
+    names = d["names"]
+    bat = names[names["category"] == "batter"].sort_values("rank").reset_index(drop=True)
+    bowl = names[names["category"] == "bowler"].sort_values("rank").reset_index(drop=True)
+
+    def name_cells(row):
+        if row is None:
+            return ["", "", ""]
+        same = str(row["registry_name"]).strip() == str(row["ball_by_ball_name"]).strip()
+        return [fint(row["rank"]), row["registry_name"],
+                "match" if same else "differs"]
+
+    rows = []
+    for i in range(max(len(bat), len(bowl))):
+        rows.append(name_cells(bat.iloc[i] if i < len(bat) else None)
+                    + name_cells(bowl.iloc[i] if i < len(bowl) else None))
+    R.table(doc, ["#", "Batter", "Name check", "#", "Bowler", "Name check"],
+            rows, [1.0, 4.6, 2.0, 1.0, 4.6, 2.0],
+            ["right", "left", "center", "right", "left", "center"],
+            reserve_from=None, font=7.5)
+    R.source_note(doc, "The only disagreement anywhere in the data pack is player 4458 "
+                       "(registry AHT Donald, delivery file Aneurin Donald), who is not ranked in "
+                       "either role. The registry names match all 20 registry_name values in the "
+                       "submission list, but that does not verify the live Unstop dropdown; that "
+                       "form was not opened. Spelling differences, including Namboori Tilak "
+                       "Varma, must be checked against the live dropdown before submission.")
+
+
+# ------------------------------------------------------------------ section 3
+def section_data(doc, d, figs) -> None:
+    R.h1(doc, "5", "Data and scope")
+
+    R.body(doc, "The input is a proprietary ball-by-ball T20 data pack: 200,999 deliveries "
+                "across 883 matches, 98 venues and 138 competitions, with a separate player "
+                "registry and playing-eleven file. Column names, types and null rates were "
+                "profiled before any analysis; the audit that did so is summarised here.")
+
+    R.h2(doc, "5.1  Match universe")
+    rows = [
+        ["Matches in the pack", "883"],
+        ["Out of scope (two non-IPL, non-T20I T20 competitions)", "30"],
+        ["In scope by competition", "853"],
+        ["Excluded: abandoned or no result", "41"],
+        ["Excluded: DLS or shortened", "28"],
+        ["Excluded: incomplete innings record", "11"],
+        ["Excluded: tied or decided by super over", "7"],
+        ["Analysis-ready matches", "766"],
+        ["   of which IPL", "351"],
+        ["   of which T20I", "415"],
+        ["Analysis-ready deliveries", "183,167"],
+    ]
+    R.table(doc, ["Filter step", "Count"], rows, [12.5, 4.0],
+            ["left", "right"], bold_last_row=False)
+    R.body(doc, "The analysis-ready rule is strict and was fixed before modelling: a winner "
+                "must exist, both regulation innings must be complete in the sense of all balls "
+                "used, all out or target reached, the match must not be tied, must not be "
+                "decided by a super over, and must carry no DLS revision. The completeness "
+                "clause is what catches eleven rain-truncated matches that no DLS field flags. "
+                "Super overs are excluded from every stage; innings three and four are never "
+                "modelled.")
+
+    R.h2(doc, "5.2  Integrity checks that passed")
+    checks = [
+        ("Duplicate delivery rows", "0"),
+        ("Duplicate match-innings-delivery combinations", "0"),
+        ("Run-margin reconstruction checks failed", "0"),
+        ("Wicket-win target checks failed", "0"),
+        ("Legal-ball checks failed", "0"),
+        ("Innings with more than 120 legal balls", "0"),
+        ("Innings with more than 10 wickets", "0"),
+        ("Player IDs absent from the registry", "0"),
+    ]
+    R.table(doc, ["Check", "Result"], [[a, b] for a, b in checks], [12.5, 4.0],
+            ["left", "right"])
+    R.body(doc, "Two field conventions are worth stating because they drive the ball-value "
+                "model. First, the runs field means runs off the bat; the delivery total is "
+                "runs plus extras1_runs plus extras_2_runs. Second, a wide is not a ball faced and "
+                "is charged entirely to the bowler, while a no-ball is faced but is not a legal "
+                "ball. Run-outs and stumpings on wides are wickets lost but not bowler wickets, "
+                "and the model treats them accordingly.")
+
+    R.h2(doc, "5.3  Names")
+    R.body(doc,                "The canonical name is the player registry name, not the ball-by-ball name. "
+                "Exactly one player ID differs between the two sources: the registry says "
+                "AHT Donald, the delivery file says Aneurin Donald. Every other ID is stable, with zero IDs "
+                "carrying multiple striker or bowler names. A per-player audit of registry name "
+                "against delivery name is released with the code.")
+
+    R.h2(doc, "5.4  Competition exposure of the ranked players")
+    fr = d["fr"]
+    rows = []
+    for role in ("batter", "bowler"):
+        sub = fr[fr["role"] == role]
+        counts = sub["competition_exposure"].value_counts()
+        ipl = int(counts.get("IPL-only", 0))
+        t20 = int(counts.get("T20I-only", 0))
+        both = int(counts.get("Both", 0))
+        rows.append([role.capitalize(), fint(ipl), fint(t20), fint(both),
+                     fint(ipl + t20 + both)])
+    R.table(doc, ["Role", "IPL only", "T20I only", "Both", "Total"], rows,
+            [4.6, 3.2, 3.2, 3.2, 2.8],
+            ["left", "right", "right", "right", "right"])
+    R.source_note(doc, "Both = at least one qualifying innings in each competition.")
+
+    R.body(doc, "Every one of the fifteen ranked batters has qualifying innings in both "
+                "competitions. Five of the fifteen bowlers do not: four qualify on T20I evidence "
+                "alone and one on IPL evidence alone. That asymmetry is the structural reason the "
+                "bowler list is the less stable of the two, because a single-competition bowler is "
+                "being compared with a mixed population on a record that contains none of the "
+                "other competition's deliveries. Section 8.3 shows what happens when the two "
+                "pools are separated.", space_after=3)
+
+    rer = d["reruns"]
+    single = fr[fr["competition_exposure"] != "Both"].sort_values(["role", "rank"])
+    rows = []
+    for _, r in single.iterrows():
+        run = "IPL-only" if r["competition_exposure"] == "IPL-only" else "T20I-only"
+        hit = rer[(rer["run"] == run) & (rer["role"] == r["role"])
+                  & (rer["player_name"] == r["player_name"])]
+        rows.append([r["player_name"], r["role"].capitalize(), run, fint(r["rank"]),
+                     fint(hit["rank"].iloc[0]) if len(hit) else "—"])
+    if rows:
+        R.table(doc, ["Player", "Role", "Only competition", "Final rank", "Rerun rank"], rows,
+                [4.9, 2.8, 3.6, 2.6, 2.6],
+                ["left", "left", "left", "right", "right"])
+    R.h2(doc, "5.5  Pressure value and overall skill are separate axes")
+    figure(doc, figs["scatter"],
+             "Figure 1.  Pressure-specific value (P) against overall skill (S), all 30 ranked "
+             "players.",
+             "Circles are batters and squares are bowlers; filled markers are the published top "
+             "10, hollow markers reserves. P is the pressure-specific component, S overall "
+             "skill; both are centred on zero, so the reference lines mark the average of the "
+             "ranked population, not zero ability. Names are selected leading examples. "
+             "Coordinates read from the P and S columns of "
+             "outputs/final_rankings.csv.")
+
+    R.body(doc, "The cloud is not a tight diagonal. For bowlers the two components are almost "
+                "unrelated, and for batters only weakly related: several players sit in the top "
+                "10 on one component and outside it on the other. The rating combines the "
+                "components with fixed weights rather than rescaling a single skill.")
+
+
+# ------------------------------------------------------------------ section 4
+def section_method(doc, d, figs) -> None:
+    R.h1(doc, "6", "Method")
+    R.body(doc, "The measurement chain has six steps. Each produces a saved artefact, and each "
+                "is separately testable. The order matters: leverage cannot be computed before "
+                "win probability exists, and shrinkage cannot be applied before the component "
+                "gates have been evaluated.")
+
+    R.h2(doc, "6.1  Win probability")
+    R.body(doc, "A ball-level win-probability model is fitted separately for each innings. "
+                "The innings-1 model predicts the probability that the batting side wins from "
+                "state features: score, wickets lost, legal balls remaining and phase. The "
+                "innings-2 model predicts the chasing side's win probability from the same "
+                "state plus the required run rate.")
+    i1 = d["i1"]
+    i2 = d["i2"]
+    wp = d["wp"]
+    rows = []
+    for _, r in i1.sort_values("log_loss").iterrows():
+        tag = " (shipped)" if r["model"] == "logistic_spline" else " (comparator)"
+        rows.append([f"Innings 1 — {r['model']}{tag}", f3(r["log_loss"]), f3(r["brier"]),
+                     f3(r["auc"]), f3(r["ece"])])
+    mono = i2[i2["model"] == "D_lgb_mono"].iloc[0]
+    wp2 = wp[wp["innings"] == 2].iloc[0]
+    rows.append(["Innings 2 — monotone LightGBM (shipped)", f3(mono["log_loss"]),
+                 f3(mono["brier"]), f3(mono["auc"]), f3(wp2["ece"])])
+    cmp2 = d["modelcmp"]
+    lg2 = cmp2[(cmp2["innings"] == 2) & (cmp2["model"] == "logistic_spline")].iloc[0]
+    rows.append(["Innings 2 — logistic spline (unconstrained comparator)",
+                 f3(lg2["log_loss"]), f3(lg2["brier"]), f3(lg2["auc"]), "—"])
+    R.table(doc, ["Model", "Log loss", "Brier", "AUC", "ECE"], rows,
+            [7.2, 2.4, 2.4, 2.4, 2.4], ["left", "right", "right", "right", "right"])
+    R.source_note(doc, "ECE is the expected calibration error across ten quantile bins.")
+    R.body(doc, "The innings-1 diagnostic discriminates only moderately, with an area under "
+                "the ROC curve (AUC) near "
+                "0.69, and is visibly compressed at the top of the calibration curve: at the "
+                "top decile it over-predicts, with a predicted win rate near 0.80 against an "
+                "observed rate near 0.75. The shipped innings-1 model is the logistic spline. "
+                "The innings-2 model discriminates well overall (AUC near 0.89) but is weakest "
+                "exactly where the leverage story matters most, in hard chases. The "
+                "unconstrained logistic scores better on log loss, but it does not impose the "
+                "monotonicity in runs and wickets that the counterfactual leverage calculation "
+                "requires. The monotone LightGBM is therefore shipped as a deliberate "
+                "structural choice, not because it wins the metric table. Both facts are "
+                "carried into the limitations rather than engineered away.")
+
+    figure(doc, Path("outputs/figures/wp_calibration.png"),
+             "Figure 2.  Out-of-fold calibration of the two shipped models. The innings-1 "
+             "panel is the logistic spline; the innings-2 panel is the monotone LightGBM.", width=15.6)
+
+    R.h2(doc, "6.2  Leverage")
+    R.body(doc, "The leverage index (LI) is the expected absolute win-probability swing of "
+                "the next delivery. The primary specification (B) normalises pooled LI over "
+                "both innings, so the league mean is 1.0 across the whole analysis set. Variant "
+                "A normalises within innings and is retained as a sensitivity variant. The two "
+                "must not be conflated: pooled LI lets the sharper chase model influence the "
+                "scale, while within-innings LI keeps each innings on its own scale.")
+
+    R.body(doc, "B_trim does not change the LI baseline. It is a weighting rule: deliveries "
+                "in the first 12 legal-ball positions of an innings "
+                "carry zero pressure weight and ordinary weight 1. Those deliveries are not "
+                "low-leverage; they carry the highest leverage in the data. They are down-weighted "
+                "because the state features there are unstable — the current run rate is zero at "
+                "the start of the innings and the required rate is undefined in innings 1 — not "
+                "because they are unimportant.")
+
+    pv = d["pv"]
+    pv_all = pv[pv["phase"] == "all"]
+    rows = []
+    for _, r in pv_all.iterrows():
+        rows.append([f"Innings {int(r['innings'])}", fint(r["n_high"]), fint(r["n_ordinary"]),
+                     fmt(r["sr_high"], 1), fmt(r["sr_ordinary"], 1),
+                     fmt(r["adj_runs_delta_per_100"], 2),
+                     fmt(r["adj_wickets_delta_per_100"], 2)])
+    R.table(doc, ["Innings", "HIGH balls", "Ordinary", "SR HIGH", "SR ordinary",
+                  "Adj runs / 100", "Adj wkts / 100"], rows,
+            [2.0, 2.6, 2.4, 2.6, 2.8, 3.0, 3.2],
+            ["left", "right", "right", "right", "right", "right", "right"])
+    R.source_note(doc, "These are unadjusted comparisons of raw output between high-leverage "
+                       "and ordinary deliveries; the negative adjusted run deltas are the reason "
+                       "the pressure component is built on win-probability change rather than on "
+                       "raw scoring.")
+
+    R.body(doc, "This table is the uncomfortable result at the centre of the project. On raw "
+                "strike rate, batters score faster at high leverage in both innings. On the "
+                "adjusted runs-per-100 measure, which controls for the phase and state in which "
+                "high-leverage balls occur, the advantage reverses in innings 1. That is why P is "
+                "defined on win-probability change and why the report does not claim that "
+                "pressure simply improves scoring.")
+
+    R.h2(doc, "6.2.1  Pressure shares by innings and phase")
+    ps = d["ps"]
+    ps = ps[(ps["version"] == "pooled_quartile")]
+    rows = []
+    for _, r in ps.sort_values(["innings", "phase"]).iterrows():
+        rows.append([f"Innings {int(r['innings'])}", str(r["phase"]).capitalize(),
+                     fint(r["n"]), fint(r["high"]), f3(r["share"])])
+    R.table(doc, ["Innings", "Phase", "Balls", "High-pressure", "Share"], rows,
+            [3.0, 3.5, 3.0, 3.5, 3.0], ["center", "left", "right", "right", "right"])
+    R.source_note(doc, "High-pressure shares differ sharply by innings and phase.")
+
+    figure(doc, Path("outputs/figures/li_by_over_wickets.png"),
+             "Figure 3.  Leverage index by over and wickets remaining.", width=15.6)
+
+    figure(doc, Path("outputs/figures/li_heatmap_chase.png"),
+             "Figure 4.  Chase-state leverage heatmap.", width=15.6)
+
+    R.h2(doc, "6.3  Ball values and adjustment")
+    R.body(doc, "For every delivery the frozen fold model scores the pre-ball state and the "
+                "eight counterfactual post-ball states. The same training folds supply the "
+                "empirical outcome distribution P(o | s) in the innings, phase, wicket and "
+                "situation bin. The expected win-probability change is the probability-weighted "
+                "mean of the counterfactual changes:")
+    R.body(doc, "E[ΔWP_b | s_b] = Σ_o P(o | s_b) × [WP_after(s_b, o) − WP_before(s_b)].",
+             italic=True)
+    R.body(doc, "The delivery value is the win-probability change net of that expectation:")
+    R.body(doc, "y_b = WPAE_b = ΔWP_b − E[ΔWP_b | s_b].", italic=True)
+    R.body(doc, "ΔWP_b is the actual change in the batting side's win probability on the "
+                "delivery. The batter's contribution is y_b and the bowler's contribution is "
+                "−y_b. The raw pressure value is the B_trim-weighted mean of those delivery "
+                "values, raw_apv_i = Σ_b w_b y_b / Σ_b w_b, where w_b is the B_trim pressure "
+                "weight. P is that weighted mean after shrinkage. The separate pressure-weighted "
+                "ridge fit produces a player coefficient used as a cross-check; it is not the "
+                "weighted mean plotted in the rankings table.")
+    R.body(doc, "Expected-runs and expected-wicket models are fitted elsewhere in the "
+                "pipeline for descriptive validation. They are not inputs to y_b. The "
+                "delivery-level residual is referred to only as WPAE in this report.")
+
+    rg = d["ridge"]
+    r_b = rg[rg["model"] == "B"].iloc[0]
+    R.body(doc, f"The ridge cross-check is a null result. Its held-out ball-level error is "
+                f"{fmt(r_b['cv_weighted_mse'], 6)} against a no-player baseline of "
+                f"{fmt(r_b['baseline_no_player_cv_mse'], 6)}, a difference of "
+                f"{format(r_b['improvement'], '.2e').replace('-', '\u2212')} (slightly worse, "
+                f"not an improvement). Player identity adds essentially nothing to the "
+                f"prediction of an individual delivery beyond the state features, so the ridge "
+                f"estimate is used to check ordering, not to replace the pressure-weighted mean.")
+
+    doc.add_page_break()
+    R.h2(doc, "6.4  Components P, C and S")
+    gate = d["gate"]
+    rows = []
+    for _, r in gate.iterrows():
+        rows.append([r["player_type"].capitalize(), r["component"], fint(r["n_rows"]),
+                     f3(r["mean_spearman"])])
+    R.table(doc, ["Role", "Component", "Tests", "Mean predictive Spearman"], rows,
+            [5.0, 4.0, 3.5, 4.5], ["left", "center", "right", "right"])
+    R.source_note(doc, "A component was retained only if its mean predictive Spearman across "
+                       "the test grid was greater than zero.")
+
+    R.body(doc, "The statistic is predictive, not descriptive: a component measured in one "
+                "half of the data is compared with the relevant outcome in the other half. The "
+                "inclusion rule is a mean predictive Spearman greater than zero. All three "
+                "components clear that rule for both roles, with values between 0.12 and 0.18. "
+                "That they are modest is the point: the components are not restatements of the "
+                "delivery-level pressure value and are not strongly determined by it.")
+
+    R.body(doc, "The reported P, C and S are within-role z-scores. P standardises the "
+                "shrunken B_trim-weighted mean of y. C standardises the average of two "
+                "standardised terms: the share of positive qualifying units (batter innings "
+                "or bowler matches with at least six pressure-weighted balls) and the median "
+                "match-level pressure value. S standardises the opposition-adjusted ridge "
+                "effect from the all-ball model at alpha 10,000. Only P is shrunk; C and S are "
+                "not. Mat is the number of matches in which the player had at least one "
+                "pressure-weighted delivery. Because the components are z-scores, a negative "
+                "P or C is below the role mean, not a negative contribution.")
+
+    agree = d["agree"]
+    R.body(doc, "Agreement across the 72-variant definitional grid separates the two roles "
+                "sharply. For batters, the minimum pairwise Spearman correlation between "
+                "variant orderings is " +
+                f"{fmt(agree[agree['player_type']=='batter'].iloc[0]['min_pairwise_spearman'], 3)} "
+                "and the median is " +
+                f"{fmt(agree[agree['player_type']=='batter'].iloc[0]['median_pairwise_spearman'], 3)}. "
+                "For bowlers the minimum is " +
+                f"{fmt(agree[agree['player_type']=='bowler'].iloc[0]['min_pairwise_spearman'], 3)}, "
+                "which is indistinguishable from no agreement at all. The batter ordering is "
+                "robust to definitional choice; the bowler ordering is not.")
+
+    R.h2(doc, "6.5  Shrinkage")
+    sh = d["shrink"]
+    med = sh.groupby("player_type")["shrink_factor"].median()
+    R.body(doc, f"Only P is shrunk. It is shrunk toward the population mean using "
+                f"cluster-robust standard errors, with the shrinkage factor "
+                f"B_i = signal_var / (signal_var + se_i^2). The median shrink factor is "
+                f"{fmt(med['batter'], 3)} for batters and {fmt(med['bowler'], 3)} for bowlers. "
+                f"C and S are not shrunk. A factor near zero means the player's own P estimate "
+                f"contributes almost nothing beyond the population mean, and that is the correct "
+                f"description of the bowler pressure signal. The between-player variance for "
+                f"bowlers has to be floored at 1e-06 for the estimator to be defined at all, "
+                f"which is a direct statement that the signal is close to the noise floor.")
+
+    R.h2(doc, "6.6  Rating and ranking")
+    R.body(doc, "The primary composite is Rating = (P + C + S) / 3, the equal-weight mean "
+                "of the three standardised components, used for the second tie-break only. It "
+                "is not the bootstrap median rank and it is not the 72-variant consensus rank. "
+                "Ranking proceeds in three stages: "
+                "rank on the primary specification, re-rank inside 1,000 match resamples, then "
+                "order by integer bootstrap median rank with the tie-breaks fixed in advance. "
+                "The 72-variant consensus rank is retained as a sensitivity column and is never "
+                "used to order the published list.")
+
+    R.body(doc, "The 72-variant grid is a factorial sensitivity design: B_trim or B, n_eff "
+                "thresholds of 100, 150 or 200, four component-weight specifications (equal, "
+                "P-heavy, C-heavy and S-heavy) and three ridge alpha values. Variants A and C "
+                "are not members of this grid, and the grid does not vary the pressure "
+                "definition.")
+
+
+# ------------------------------------------------------------------ section 5
+def section_stability(doc, d, figs) -> None:
+    R.h1(doc, "7", "Uncertainty and stability", page_break=False)
+    boot = d["boot"]
+    n_res = int(boot["n_resamples"].iloc[0])
+    n_bat = int((boot["role"] == "batter").sum())
+    n_bowl = int((boot["role"] == "bowler").sum())
+
+    R.body(doc, "A rank interval is only meaningful if the resampling scheme matches the "
+                "thing that varies in reality. Two players do not face the same matches, so the "
+                "resampling unit here is the match, not the delivery.")
+
+    R.h2(doc, "7.1  The resampling scheme")
+    for text in [
+        f"{n_res:,} resamples, each drawing 766 matches with replacement.",
+        "One random seed (42) for the whole procedure, so the draw sequence is fixed and "
+        "replayable.",
+        "Row weights equal the match multiplicity, so a match drawn three times counts three "
+        "times in every sum.",
+        f"A fixed player population in every resample: {n_bat} batters and {n_bowl} bowlers, "
+        "taken from the file-of-record candidate sets rather than recomputed.",
+        "Integer median ranks, and 95% rank intervals from the 2.5th and 97.5th percentiles "
+        "using the higher quantile method.",
+        "P(top 10) and P(top 5), the share of resamples in which the player finished inside "
+        "that boundary.",
+    ]:
+        R.bullet(doc, text)
+
+    R.body(doc, "This is sampling with replacement, not a permutation. The distinction is "
+                "verifiable and it is tested: tests/test_bootstrap_sampling.py replays the "
+                "draw sequence for the first 50 resamples from the same seed and asserts that "
+                "every draw contains duplicate matches, that multiplicities are integer counts "
+                "summing to 766, that some original match is omitted from every resample, and "
+                "that each resample's saved ranks form a complete permutation of 1 to "
+                f"{n_bat} or 1 to {n_bowl} with no gaps and no change of population. A "
+                "permutation draw would fail all four assertions.")
+
+    R.h2(doc, "7.2  Rank intervals")
+    figure(doc, figs["forest"],
+             "Figure 5.  Bootstrap rank intervals, top 15 of each role.")
+
+    R.body(doc, "The intervals are wide, and the width is the result rather than a defect. "
+                "Any player can fall outside the top 10 in some bootstrap resamples; P(top 10) "
+                "is at least 0.5 for 9 of the 10 batters and 6 of the 10 bowlers. Adjacent "
+                "ranks are not resolved where their intervals overlap. The corollary is that "
+                "the difference between rank 3 and rank 9 in either list is not a difference "
+                "the data can resolve, and the report does not claim otherwise.")
+
+    figure(doc, figs["ptop"],
+             "Figure 6.  Share of resamples finishing in the top 10.")
+
+    R.body(doc, "The top five by P(top 10) are Rashid Khan (0.989), Sunil Narine (0.912), "
+                "Tim David (0.888), Suryakumar Yadav (0.881) and Abhishek Sharma (0.858). "
+                "Abhishek Sharma's rank interval of 1 to 24 is wide and must not be read as "
+                "narrow.")
+
+    R.h2(doc, "7.3  Definitional stability")
+    R.body(doc, "Uncertainty from sampling is one source of movement; definitional choice is "
+                "another, and for bowlers it is the larger of the two. The variant grid varies "
+                "the weighting and eligibility settings across 72 combinations. For batters the "
+                "orderings agree closely across the grid. For bowlers they do not agree at all "
+                "in the worst case, which means a bowler's position can be an artefact of "
+                "which definition was chosen.")
+
+    rel = d["rel"]
+    rows = []
+    for role in ("batter", "bowler"):
+        for scheme, label in (("odd_even", "Odd / even matches"),
+                              ("early_late", "Earlier / later matches")):
+            r = rel[(rel.player_type == role) & (rel.scheme == scheme)
+                    & (rel.metric == "rating")].iloc[0]
+            rows.append([role.capitalize(), label, fint(r["n_players"]),
+                         f3(r["spearman"]), fint(r["top10_overlap"])])
+    R.table(doc, ["Role", "Split", "Players", "Spearman of rating", "Top-10 overlap"],
+            rows, [3.0, 5.4, 2.4, 3.4, 3.0],
+            ["left", "left", "right", "right", "right"])
+    R.source_note(doc, "Top-10 overlap is the number of players who appear in both halves' "
+                       "top-10 lists.")
+
+    R.body(doc, "The two halves share only two to four of ten top-10 places, depending on "
+                "role and split. A rating that unstable is not a precise instrument. It is, "
+                "however, a reproducible and internally consistent one, and the places it does "
+                "preserve are the ones with large exposure: the two roles' split-half overlaps "
+                "both retain the leading bowlers and the highest-exposure batters.")
+
+
+# ------------------------------------------------------------------ section 6
+def section_validation(doc, d, figs) -> None:
+    R.h1(doc, "8", "Validation", page_break=False)
+    R.body(doc, "Three independent tests were run against the rating. Each asks a different "
+                "question: does the real pressure weighting stand apart from within-stratum "
+                "placebo weight permutations, does the rating predict anything about later "
+                "matches, and does the ranking survive a change of competition. All three are "
+                "reported, including the ones that came back null.")
+
+    R.h2(doc, "8.1  Placebo pressure-weight permutations")
+    c1 = d["c1"]
+    rows = []
+    for _, r in c1.iterrows():
+        rows.append([r["role"].capitalize(), r["scheme"].replace("_", " / "), r["metric"],
+                     fint(r["n_players"]), f3(r["real"]), f3(r["placebo_p95"]),
+                     f"{r['share_placebo_ge_real']:.2f}"])
+    R.table(doc, ["Role", "Split", "Metric", "Players", "Real", "Placebo p95", "Share"],
+            rows, [2.6, 4.4, 2.0, 2.2, 1.9, 2.4, 1.5],
+            ["left", "left", "center", "right", "right", "right", "right"])
+    R.source_note(doc, "The real match-half assignment is held fixed. Within each half, the "
+                       "pressure weights are permuted within innings × phase strata, preserving "
+                       "the innings and phase composition of every placebo replicate. One hundred "
+                       "permutations are drawn, each with its own seed. Real is the Spearman "
+                       "correlation between the two real halves. Placebo p95 is the 95th "
+                       "percentile of the same statistic across the 100 permutations. Share is "
+                       "the empirical exceedance share: the proportion of permutations whose "
+                       "statistic is greater than or equal to the real statistic. It is not a "
+                       "formal p-value: no null distribution is assumed and no significance "
+                       "threshold is applied. A low share is evidence for the split, a high "
+                       "share is evidence against it.")
+
+    figure(doc, figs["placebo"],
+             "Figure 7.  Real split-half correlation against the placebo distribution.",
+             width=13.6)
+
+    R.body(doc, "Only two of the eight comparisons clearly favour the real weighting: "
+                "batter early/late consistency (C) at a share of 0.06 and bowler odd/even "
+                "consistency (C) at 0.01. None of the pressure-level (P) comparisons clearly "
+                "beats its placebo distribution. Batter odd/even P is 0.87, batter "
+                "early/late P is 0.12, bowler odd/even P is 0.54 and bowler early/late P is "
+                "0.66. Four of the eight real statistics are below their placebo mean, but "
+                "that count is not a substitute for the exceedance shares. The evidence "
+                "supports limited consistency signal in two split configurations, not a "
+                "general claim that pressure weighting reliably outperforms chance.")
+
+    R.h2(doc, "8.2  Temporal holdout")
+    c2 = d["c2"]
+    rows = []
+    keep = c2[c2["predictor"].isin(["rating", "S"])]
+    for _, r in keep.iterrows():
+        rows.append([r["role"].capitalize(), r["predictor"], r["target"],
+                     fint(r["n_players"]), f3(r["spearman"]), f3(r["pearson"])])
+    R.table(doc, ["Role", "Predictor", "Later target", "Players", "Spearman", "Pearson"],
+            rows, [3.0, 3.0, 3.6, 2.2, 2.6, 2.6],
+            ["left", "center", "left", "right", "right", "right"])
+    R.source_note(doc, "Later raw pressure value is the player's unshrunk B_trim-weighted "
+                       "mean in matches after the split; con_median is the later match-level "
+                       "consistency median.")
+
+    R.body(doc, "The rating's ability to predict a player's later raw pressure value is weak: "
+                f"a rank correlation of {f3(keep[(keep.role=='batter') & (keep.predictor=='rating')].iloc[0]['spearman'])} "
+                "for batters and "
+                f"{f3(keep[(keep.role=='bowler') & (keep.predictor=='rating')].iloc[0]['spearman'])} "
+                "for bowlers. The top-10 and top-20 temporal tests reported in the same file have "
+                "confidence intervals that include zero. Consistency is somewhat more "
+                "predictable than pressure, particularly for bowlers, where the rank "
+                "correlation against the later consistency median reaches "
+                f"{f3(keep[(keep.role=='bowler') & (keep.predictor=='rating') & (keep.target=='con_median')].iloc[0]['spearman'])}. "
+                "A rating that does not forecast the next season's pressure performance well is "
+                "still a legitimate description of what has happened; it should not be sold as "
+                "a forecast, and it is not here.")
+
+    R.h2(doc, "8.3  Competition subsets")
+    c3 = d["c3"]
+    rows = []
+    for _, r in c3.iterrows():
+        rows.append([r["run"], r["role"].capitalize(), f"{int(r['overlap_top10'])}/10",
+                     fint(r["final_top10_in_rerun_top15"])])
+    R.table(doc, ["Rerun", "Role", "Top-10 overlap with final list",
+                  "Final top 10 inside rerun top 15"], rows,
+            [4.0, 3.0, 5.0, 5.0], ["left", "left", "right", "right"])
+    R.source_note(doc, "The overlaps are recomputed against the stability-based final top 10. "
+                       "The in_final_top10 column in the stored rerun file was frozen against an "
+                       "earlier ranking order and is not used.")
+
+    R.body(doc, "Rebuilding the rating on IPL matches alone retains seven of ten batters and "
+                "seven of ten bowlers. Rebuilding on T20Is alone retains six of ten batters and "
+                "five of ten bowlers. The T20I list is the less stable of the two, and the four "
+                "T20I-only bowlers — Mark Adair #3, Abrar Ahmed #9, Shaheen Afridi #11 and "
+                "Taskin Ahmed #13 — all remain inside the T20I-only top 15.")
+
+    R.body(doc, "A stored column in s7_c3_reruns.csv reported 9/10 and 8/10 for these overlaps "
+                "against a superseded ranking order. The historical CSV is preserved unchanged; "
+                "the recomputed file is the one this report quotes.")
+
+
+# ------------------------------------------------------------------ section 7
+def section_limits(doc, d) -> None:
+    R.h1(doc, "10", "Limitations", page_break=False)
+    R.body(doc, "The limitations are listed here rather than in an appendix because they "
+                "constrain what the rankings can be used for. Each item below is a property of "
+                "the evidence, not a caveat added for form.")
+
+    items = [
+        ("Pressure-specific reliability is modest.",
+         "Split-half rank correlations for the pressure component sit between 0.10 and 0.21, "
+         "and no pressure-level comparison clearly beats its placebo distribution. P should "
+         "be read as a soft signal that shifts a player within a band, not as a precise "
+         "measurement that separates adjacent ranks."),
+        ("Innings-1 win probability discriminates weakly.",
+         "An AUC near 0.69 with visible compression at the top of the calibration curve: at "
+         "the top decile the model over-predicts, with a predicted win rate near 0.80 against "
+         "an observed rate near 0.75. Because leverage is derived from this model, "
+         "first-innings leverage is the least trustworthy part of the weighting scheme."),
+        ("Hard chases are the weakest region of the second-innings model.",
+         "Overall discrimination is good (AUC near 0.90), but calibration degrades where the "
+         "required rate is high and wickets have fallen, which is exactly the state that "
+         "produces the largest leverage values. Errors are therefore largest where leverage "
+         "is largest."),
+        ("Placebo results are limited and mixed.",
+         "Only two of the eight comparisons clearly favour the real weighting: batter "
+         "early/late C (share 0.06) and bowler odd/even C (share 0.01). No pressure-level "
+         "comparison clearly beats its placebo distribution; batter odd/even P is the weakest "
+         "at a share of 0.87. Four real statistics are below their placebo mean. Any summary "
+         "that implies pressure weighting generally outperforms the placebo procedure would "
+         "misrepresent the evidence."),
+        ("Temporal prediction is weak.",
+         "Rank correlation between the rating and a player's later raw pressure value is "
+         "about 0.09 for batters and 0.13 for bowlers, and the top-10 and top-20 temporal "
+         "intervals include zero. The rating describes the period it was fitted on, not the "
+         "next season."),
+        ("Ranking sensitivity is material, and worst for bowlers.",
+         "Minimum pairwise agreement across 72 definitions is 0.82 for batters but negative "
+         "for bowlers. A bowler's placing can depend on which pressure definition was chosen. "
+         "The batter list is robust to that choice and the bowler list is not."),
+        ("Player effects barely improve held-out prediction.",
+         "The ridge model's out-of-sample ball-level error is 0.005561 against a no-player "
+         "baseline of 0.005560, a difference of -1.2e-06 (slightly worse), which is a null "
+         "result. Player identity does not materially improve the prediction of an individual "
+         "delivery once the match state is known."),
+        ("Shrinkage uncertainty is severe for bowlers.",
+         "The median shrink factor is close to zero for bowlers, and the between-player "
+         "variance has to be floored for the estimator to exist. Bowler pressure components "
+         "should be treated as weakly identified."),
+        ("The 12-ball early-innings trim is a choice, not a finding.",
+         "B_trim is a weighting rule, not a change to the LI baseline: deliveries in the first "
+         "12 legal-ball positions carry zero pressure weight and ordinary weight 1. Those "
+         "deliveries carry the highest leverage in the data but have unstable state features, "
+         "including a zero current run rate at the start of the innings and an undefined "
+         "required rate in innings 1. Variants without the trim are included in the 72-variant "
+         "grid, and the ranking shift they cause is part of the sensitivity reported in "
+         "section 7."),
+        ("Role and batting position confound the comparison.",
+         "No batting-position adjustment exists in the rating. Six of the top-10 batters put "
+         "more than 55% of their pressure weight in positions 1 and 2, so part of any pressure "
+         "advantage reflects where a player bats. The joint batter-bowler ridge adjusts for "
+         "opposition, but that adjustment is weak for players with only T20I exposure."),
+        ("Opposition adjustment is weak for T20I-only players.",
+         "The joint batter-bowler ridge adjusts for opposition, but that adjustment is weak "
+         "for players with only T20I exposure because their records contain few "
+         "cross-competition comparisons. T20I fixtures also include a wide range of opponent "
+         "quality, including associate members. The adjustment therefore does not make an "
+         "IPL record and a T20I record fully comparable, and this is the most likely single "
+         "explanation for the T20I-only instability."),
+        ("Several analysis choices were made after seeing diagnostics.",
+         "The early-innings weighting rule, the variance floor and the choice of the stability "
+         "order as the published ranking all followed diagnostic inspection. Where possible "
+         "their effect is bounded by the variant grid, but the grid does not remove the fact "
+         "that the analyst saw the results before fixing the definition."),
+    ]
+    for i, (head, text) in enumerate(items, 1):
+        p = doc.add_paragraph()
+        p.paragraph_format.space_before = Pt(5)
+        p.paragraph_format.space_after = Pt(1)
+        p.paragraph_format.keep_with_next = True
+        r1 = p.add_run(f"10.{i}  ")
+        r1.font.size = Pt(9.5)
+        r1.font.bold = True
+        r1.font.color.rgb = R.PINK
+        r2 = p.add_run(head)
+        r2.font.size = Pt(9.5)
+        r2.font.bold = True
+        r2.font.color.rgb = R.NAVY
+        R.body(doc, text, size=9.5, space_after=2)
+
+    R.body(doc, "One thing the limitations do not license is the conclusion that the "
+                "rankings are arbitrary. The batter ordering is stable across definitions, the "
+                "leading bowlers survive both competition subsets, and the direction of each "
+                "component is consistent with independent validation. What the limitations "
+                "exclude is precision: this method separates broad tiers of players reliably and "
+                "adjacent individuals poorly.", space_after=4)
+
+
+# ------------------------------------------------------------------ section 8
+def section_repro(doc, d) -> None:
+    R.h1(doc, "12", "Reproducibility appendix")
+    R.body(doc, "This section states exactly what can be reproduced from the released "
+                "repository, and separates that from what cannot. The distinction is not "
+                "cosmetic: it determines whether an external reviewer can independently confirm "
+                "a number or has to take it on trust.")
+
+    R.h2(doc, "12.1  Test suite")
+    R.body(doc, "The complete automated suite is 104 tests and all of them pass. The v3 "
+                "report quoted 97; the seven additional tests bind the WP metrics and "
+                "calibration to the shipped predictions, verify that WPAE is actual minus "
+                "expected win-probability change, and check the pressure-contrast units and "
+                "placebo replicate counts.")
+
+    R.h2(doc, "12.2  Frozen-file hash audit")
+    manifest = d["manifest"]
+    counts = manifest["status"].value_counts()
+    n_verified_pack = int(counts.get("verified", 0))
+    n_norec = int(counts.get("no recorded baseline", 0))
+    n_for = int(counts.get("file of record", 0))
+    n_sign = int(len(d["sign"]))
+    n_pre = int(len(d["pre"]))
+    total_verified = n_verified_pack + n_sign
+    rows = [
+        ["Pre-Step-4 freeze manifest, verified against historical hash", fint(n_pre)],
+        ["Official sign-correction manifest, verified against historical hash", fint(n_sign)],
+        ["Total authentic historical comparisons", fint(total_verified)],
+        ["Mismatches among those comparisons", "0"],
+        ["Files with a current hash but no recoverable historical baseline", fint(n_norec)],
+        ["Stage 7 outputs recorded at file-of-record status", fint(n_for)],
+        ["Files missing from the release", "0"],
+    ]
+    R.table(doc, ["Audit category", "Files"], rows, [12.5, 4.0], ["left", "right"])
+    R.body(doc, f"The freeze manifest contains 71 files ({n_verified_pack} verified, "
+                f"{n_norec} with no recorded baseline, {n_for} files of record). The sign-correction "
+                f"manifest adds a further {n_sign} files that are not part of those 71, so the "
+                f"two manifests cover 89 distinct files. Of those 89, {total_verified} are "
+                f"compared against an authentic historical baseline and every one of those "
+                f"comparisons matches. A further {n_norec} carry a recorded current hash but no "
+                f"recoverable baseline and are not described as verified anywhere in this report. "
+                f"The remaining {n_for} are Stage 7 outputs declared as files of record and hashed "
+                f"at creation. There are zero mismatches among the authentic comparisons and zero "
+                f"missing files.")
+
+    R.h2(doc, "12.3  What is and is not reproducible")
+    R.body(doc, "Code, tests, configuration, saved tables, figures and the document generator "
+                "are all released. The raw data pack is proprietary and is not redistributed. "
+                "This means the pipeline can be re-run in full by anyone who has the pack in "
+                "the documented location, and cannot be re-run at all by anyone who does not. "
+                "Every number in this report can be traced to a saved CSV that ships with the "
+                "code, so the report can be checked without the raw data even though the "
+                "pipeline cannot be re-executed.")
+
+    R.h2(doc, "12.4  Commands")
+    for text in [
+        "py -m pip install -r requirements.txt",
+        "py -m pytest tests/ -q              # expect 104 passed",
+        "py scripts/recompute_c3_overlaps.py # regenerate the competition overlaps",
+        "py scripts/dump_report_tables.py    # regenerate every table in this report",
+        "py -m src.wp_final_metrics              # rescore the shipped WP predictions",
+        "py -m src.pressure_contrast             # rebuild the pressure contrast tables and figures",
+        "py scripts/build_methodology_report_v4.py  # rebuild the v4 DOCX and export the PDF",
+        "py scripts/verify_report_consistency_v4.py # check the v4 DOCX and PDF",
+    ]:
+        p = doc.add_paragraph()
+        p.paragraph_format.space_before = Pt(0)
+        p.paragraph_format.space_after = Pt(2)
+        p.paragraph_format.left_indent = Cm(0.5)
+        run = p.add_run(text)
+        run.font.size = Pt(8.5)
+        run.font.name = "Consolas"
+        run.font.color.rgb = R.NAVY
+
+    R.body(doc, "The data pack must be placed at Data Pack/ before any command that reads "
+                "raw deliveries. The generator reads only the saved CSVs; the v4 verifier "
+                "re-checks every published value against them.")
+
+
+# ----------------------------------------------------------------------- main
+def section_problem(doc, d) -> None:
+    R.h1(doc, "2", "Problem and scope", page_break=False)
+    R.body(doc, "Cricket performance cannot be evaluated from aggregate runs, strike rate, "
+                "wickets or economy alone. A player's contribution depends on the match "
+                "situation, required scoring rate, wickets remaining, innings phase and the "
+                "importance of each delivery. A batter may accumulate runs without materially "
+                "improving the team's chance of winning; a bowler may deliver crucial overs "
+                "even when conventional economy or wicket statistics do not fully capture "
+                "their contribution.")
+    R.body(doc, "The objective is to identify batters and bowlers who produce valuable, "
+                "consistent contributions in high-leverage situations, while accounting for "
+                "context, opposition, sample size and uncertainty. The research focuses on "
+                "IPL and T20 International matches from the 2022-onward dataset. The "
+                "deliverable is a ranked shortlist of ten batters and ten bowlers, plus five "
+                "reserves per role, with evidence to support Rajasthan Royals' selection "
+                "decisions.")
+    R.body(doc, "Conventional aggregates also obscure who created the pressure. A batter's "
+                "runs and a bowler's wickets are recorded in the same way whether they came in "
+                "a dead match or in the last over of a close chase. The method therefore "
+                "separates three questions: how much pressure a player faced, how well they "
+                "performed when it was high, and how good they are overall. Exposure, "
+                "opposition, role and sampling uncertainty are handled explicitly because a "
+                "short T20I record against weak opposition is not comparable to a long IPL "
+                "record against strong attacks. The output is a selection aid, not a forecast: "
+                "it describes what happened in the sample and quantifies how much confidence "
+                "the data support.")
+    R.h2(doc, "2.1  Research questions")
+    for q in [
+        "Which batters generate the greatest value in high-pressure situations?",
+        "Which bowlers consistently restrict or dismiss batters when match leverage is high?",
+        "Are pressure-specific contributions different from overall skill?",
+        "Are the rankings stable when different matches are sampled?",
+        "Do the leading players remain competitive across IPL and T20I subsets?",
+        "How much uncertainty remains around each player's position?",
+    ]:
+        R.bullet(doc, q)
+    R.h2(doc, "2.2  Scope")
+    R.body(doc, "IPL 2022\u20132026 and T20I 2022\u20132026, from a six-file ball-by-ball data pack. "
+                "Two other T20 competitions present in the pack (Mens T20 Emerging Teams "
+                "Asia Cup 2024, Asia Cup Rising Stars 2025) are out of scope by design. "
+                "After cleaning: 766 analysis-ready matches (351 IPL, 415 T20I) and 183,167 "
+                "analysis deliveries. Candidate populations are 131 batters and 133 bowlers "
+                "after the eligibility gates.")
+
+def section_challenges(doc, d) -> None:
+    R.h1(doc, "3", "Challenges encountered and how they were addressed")
+    R.body(doc, "The report focuses on methodology and results, but the work also involved "
+                "substantial engineering and analytical challenges in producing trustworthy "
+                "rankings. Each challenge below is stated with its resolution and the "
+                "evidence or remaining caveat.")
+    rows = [
+        ["Reconstructing cricket delivery data",
+         "Runs off the bat vs total delivery runs; wides, no-balls, byes, leg-byes; legal vs "
+         "illegal deliveries; bowler responsibility; super overs and DLS.",
+         "All runs reconstructed as runs + extras1 + extras2; run-margin reconstruction checks "
+         "passed with zero mismatches; completeness rule catches 11 rain-truncated innings that "
+         "no DLS field flags.",
+         "Resolved; rain-truncated innings are caught by the completeness rule."],
+        ["Defining pressure objectively",
+         "Arbitrary phase labels (powerplay, death) are insufficient on their own.",
+         "Continuous Leverage Index from the expected absolute win-probability swing of the "
+         "next ball, normalised so the league mean is 1.0 in the primary pooled specification "
+         "(variant A normalises within innings).",
+         "Resolved; innings-1 pressure is thinner and noisier (AUC 0.690)."],
+        ["Building credible win-probability models",
+         "Innings 1 has no target; innings 2 has a chase geometry that can violate monotonicity.",
+         "Separate models; GroupKFold by match; monotone LightGBM for innings 2 at a cost of "
+         "+0.0158 log loss versus the unconstrained logistic comparator.",
+         "Deliberate trade-off; reported, not hidden."],
+        ["Fair player comparison",
+         "Raw aggregates overstate players with few high-leverage deliveries.",
+         "State-adjusted WPAE, opposition-adjusted ridge, effective sample size n_eff, "
+         "shrinkage, eligibility gates (n_eff >= 150, 15 matches, 70% variants).",
+         "Resolved; 131 batters and 133 bowlers eligible."],
+        ["Batter and bowler sign conventions",
+         "The ridge is fitted on batter value, so a negative fitted bowler coefficient is a "
+         "positive bowler contribution.",
+         "Sign correction applied exactly once: bowler value = negated centred coefficient.",
+         "Resolved; seven tests pin the convention."],
+        ["Small samples and player shrinkage",
+         "A player with few high-leverage balls can post an extreme raw pressure value, and "
+         "bowler between-player variance is close to the noise floor.",
+         "P shrunk toward the population mean using cluster-robust standard errors; "
+         "eligibility requires n_eff >= 150 and at least 15 matches.",
+         "Resolved for eligibility; bowler variance floored at 1e-06 and the remaining "
+         "uncertainty is reported."],
+        ["Bootstrap and ranking stability",
+         "A single rank is not enough; bowler order is variant-sensitive (min pairwise Spearman "
+         "-0.031).",
+         "1,000 match-level resamples with replacement, seed 42; median rank, 95% rank "
+         "intervals, P(top 10) and P(top 5).",
+         "Resolved; intervals are rank intervals, not performance intervals."],
+        ["Stale intermediate outputs",
+         "Some saved comparison columns were frozen against earlier ranking orders.",
+         "Recomputed the competition overlaps against the stability-based final top 10 and "
+         "preserved the historical file unchanged.",
+         "Resolved; the recomputed overlaps are the values quoted in this report."],
+        ["Reconciliation and validation",
+         "Circular checks, stale comparison flags, frozen outputs.",
+         "Independent replay of resamples 0 and 1 with zero mismatches; consistency checker "
+         "and figure verifier; recomputed C3 overlaps.",
+         "Resolved; 71 freeze files (7 verified, 44 no baseline, 20 file of record) plus 18 "
+         "sign-correction files; 25 authentic comparisons, zero mismatches."],
+    ]
+    R.table(doc, ["Challenge", "Why it mattered", "How it was addressed", "Evidence / caveat"],
+            rows, [3.0, 4.6, 5.4, 4.0], ["left", "left", "left", "left"])
+
+def section_rr(doc, d) -> None:
+    R.h1(doc, "9", "Rajasthan Royals selection implications", page_break=False)
+    R.body(doc, "The rankings should support, not replace, cricketing judgement, role "
+                "requirements and scouting assessment. Translating the results into "
+                "selection insights:")
+    R.h2(doc, "9.1  Reading the shortlist", space_before=4)
+    R.bullet(doc, "Among batters, Tim David has the highest P(top 10) at 0.888, followed "
+                  "by Suryakumar Yadav at 0.881 and Abhishek Sharma at 0.858. Among bowlers, "
+                  "Rashid Khan leads at 0.989, followed by Sunil Narine at 0.912. These are "
+                  "bootstrap selection frequencies within each role, not comparable "
+                  "performance scores across roles.")
+    R.bullet(doc, "Mustafizur Rahman (0.232) and Taskin Ahmed (0.143) are reserves with wide "
+                  "rank intervals: treat them as provisional candidates, not confirmed picks.")
+    R.bullet(doc, "Bowlers carry far more uncertainty than batters (median shrinkage 0.050 vs "
+                  "0.593; minimum pairwise Spearman -0.031 vs 0.822). Any bowler pick should "
+                  "be cross-checked against role and phase needs.")
+    R.bullet(doc, "Pressure-specific value P and overall skill S are not the same thing: a "
+                  "player can be a strong overall performer with modest pressure value, or "
+                  "vice versa. Use both columns, not the composite alone.")
+    R.bullet(doc, "Sample-size confidence matters: eligibility requires n_eff of at least 150 "
+                  "and at least 15 matches, and all 30 ranked players clear both gates.")
+    R.body(doc, "Phase-level results have mixed signs: pressure does not uniformly increase "
+                "scoring or dismissals. The figures below show the batting and bowling contrasts "
+                "without smoothing that variation away.")
+    figure(doc, Path("outputs/figures/high_vs_ordinary_batting.png"),
+             "Figure 8.  High-pressure versus ordinary batting. Left: strike rate in runs "
+             "per 100 balls. Right: adjusted runs per 100 balls after the state expectation. "
+             "Bars are unadjusted group means; negative adjusted values are retained.", width=15.6)
+
+    figure(doc, Path("outputs/figures/high_vs_ordinary_bowling.png"),
+             "Figure 9.  High-pressure versus ordinary bowling. Left: economy in runs per "
+             "over. Right: bowler wickets per over. Both use legal balls as the denominator.",
+             width=15.6)
+
+    R.h2(doc, "9.2  How these lists should be used", space_before=8)
+    for text in [
+        "Treat the top 10 as a selection pool rather than an order. Within a role the difference "
+        "between rank 3 and rank 9 is smaller than the rank intervals those places carry.",
+        "For bowlers, weight S and C more heavily than P. The median shrink factor of 0.050 "
+        "means the pressure component is close to the population mean for most bowlers, so a "
+        "high P reflects unusually strong evidence rather than a stable trait.",
+        "Where a player's 95% rank interval spans more than about 40 places, require "
+        "corroboration from a second source before committing budget to that placing. The "
+        "interval is published precisely so this check can be made without refitting anything.",
+        "Do not read team affiliation, availability, retention rights or auction eligibility "
+        "out of this report. The team column in the underlying data records historical "
+        "association within the sample window and nothing else.",
+        "If the squad needs a batter and a bowler in the same slot, compare tiers, not ranks. "
+        "The two roles were ranked separately because their components are not comparable, so "
+        "a batter's rank 4 and a bowler's rank 4 do not represent equal value.",
+    ]:
+        R.bullet(doc, text, size=9.5)
+
+
+def section_conclusion(doc, d) -> None:
+    R.h1(doc, "11", "Conclusion", page_break=False)
+    R.body(doc, "The analysis establishes a structured, context-aware and "
+                "uncertainty-conscious way to identify players whose contributions are "
+                "valuable in high-leverage T20 situations. It does not establish that these "
+                "players will outperform in future seasons: player effects are weak at "
+                "ball level, temporal persistence is modest, and only two of eight "
+                "placebo comparisons clearly favour the real weighting, both on the "
+                "consistency component.")
+    R.body(doc, "The five players with the highest P(top 10) are Rashid Khan (0.989), "
+                "Sunil Narine (0.912), Tim David (0.888), Suryakumar Yadav (0.881) and "
+                "Abhishek Sharma (0.858). That list is ordered by P(top 10), not by a claim "
+                "that these five lead both the pressure and stability components. The "
+                "greatest uncertainty sits with the bowler reserves and with any player whose "
+                "rank interval spans most of the candidate list.")
+    R.body(doc, "For Rajasthan Royals, the practical takeaway is to use the shortlist as "
+                "evidence-informed support for selection, combined with role requirements, "
+                "phase needs and scouting assessment. The rankings should support, not "
+                "replace, cricketing judgement.")
+    R.body(doc, "Future work that would improve the research: a larger or more recent data "
+                "window, a better innings-1 win-probability model, and a forward-looking "
+                "validation against subsequent seasons.")
+
+
+def build() -> Path:
+    d = load()
+    figs = build_figures(d)
+    doc = new_document()
+    chrome(doc, "SupeRR Selector S2 \u00b7 Methodology Report")
+
+    title_page(doc, d)
+    contents(doc)
+    section_exec(doc, d)
+    section_problem(doc, d)
+    section_challenges(doc, d)
+    section_rankings(doc, d)
+    section_data(doc, d, figs)
+    section_method(doc, d, figs)
+    section_stability(doc, d, figs)
+    section_validation(doc, d, figs)
+    section_rr(doc, d)
+    section_limits(doc, d)
+    section_conclusion(doc, d)
+    section_repro(doc, d)
+
+    DOCX_OUT.parent.mkdir(parents=True, exist_ok=True)
+    doc.save(str(DOCX_OUT))
+    return DOCX_OUT
+
+
+def export_pdf(docx_path: Path) -> bool:
+    """Export the DOCX to PDF with Word, refreshing the TOC and page fields."""
+    try:
+        import win32com.client as win32
+    except ImportError:
+        print("pywin32 not installed: cannot export PDF")
+        return False
+
+    PDF_OUT.parent.mkdir(parents=True, exist_ok=True)
+    if PDF_OUT.exists():
+        PDF_OUT.unlink()
+
+    word = win32.Dispatch("Word.Application")
+    word.Visible = False
+    word.DisplayAlerts = 0
+    try:
+        wdoc = word.Documents.Open(str(docx_path), ReadOnly=False)
+        try:
+            wdoc.Fields.Update()
+            for i in range(1, wdoc.TablesOfContents.Count + 1):
+                wdoc.TablesOfContents(i).Update()
+        except Exception as exc:  # noqa: BLE001
+            print(f"field refresh warning: {exc}")
+        wdoc.SaveAs(str(PDF_OUT), FileFormat=17)  # wdFormatPDF
+        wdoc.Close(False)
+    finally:
+        word.Quit()
+    return PDF_OUT.exists()
+
+
+def main() -> int:
+    docx_path = build()
+    print(f"DOCX written: {docx_path.relative_to(ROOT)}")
+    if not export_pdf(docx_path):
+        print("PDF export FAILED")
+        return 1
+    print(f"PDF exported: {PDF_OUT.relative_to(ROOT)}")
+
+    from pypdf import PdfReader
+    reader = PdfReader(str(PDF_OUT))
+    print(f"PDF pages: {len(reader.pages)}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -38,6 +38,8 @@ FILES: list[tuple[str, str]] = [
     ("outputs/Methodology_Report_Final_v2.pdf", "outputs/Methodology_Report_Final_v2.pdf"),
     ("docs/Methodology_Report_Final_v3.docx", "docs/Methodology_Report_Final_v3.docx"),
     ("outputs/Methodology_Report_Final_v3.pdf", "outputs/Methodology_Report_Final_v3.pdf"),
+    ("docs/Methodology_Report_Final_v4.docx", "docs/Methodology_Report_Final_v4.docx"),
+    ("outputs/Methodology_Report_Final_v4.pdf", "outputs/Methodology_Report_Final_v4.pdf"),
     ("data/README.md", "data/README.md"),
     ("requirements.txt", "requirements.txt"),
     # --- methodology / investigation write-ups ---------------------------
@@ -98,6 +100,8 @@ TABLE_ALLOWLIST = [
     "diagnostic_eligibility_counts.csv",
     "pressure_shares.csv",
     "pressure_validation.csv",
+    "pressure_batting_contrast.csv",
+    "pressure_bowling_contrast.csv",
     "pressure_sps_correlation.csv",
     "pressure_thresholds.csv",
     "li_variant_by_innings_phase_after_fix.csv",

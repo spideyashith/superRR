@@ -1,11 +1,15 @@
+<p align="center">
+  <img src="assets/rr_logo.svg" alt="SupeRR Selector — Season 2" width="820">
+</p>
+
 # SupeRR Selector Season 2 — Most Reliable Players Under Pressure
 
 A reproducible ranking of T20 batters and bowlers by how reliably they perform when
 the match is at its most decisive, measured against their own normal level rather
 than against raw run or wicket counts.
 
-**Status: all stages 0–8 complete, plus a Stage 7C verification pass (2026-11-15) and the v3 methodology report (2026-11-17).**
-`py -m pytest tests/ -q` → **97 passed**. No number in this README, or in any report
+**Status: all stages 0–8 complete, plus a Stage 7C verification pass (2026-11-15) and the v4 methodology report (2026-11-17).**
+`py -m pytest tests/ -q` → **104 passed**. No number in this README, or in any report
 file, is typed by hand: every figure is regenerated from saved outputs.
 
 The full task specification is [`PRD_Pressure_Players.md`](PRD_Pressure_Players.md).
@@ -24,13 +28,14 @@ Every methodological decision, including the ones that were reversed, is recorde
 | Name audit | `outputs/name_check.csv` | Registry name vs ball-by-ball name for all 30 ranked players; no spelling conflicts |
 | Integrity | `outputs/tables/freeze_manifest.csv`, `freeze_manifest_pre_step4.csv`, `official_sign_correction_manifest.csv` | 71 + 7 + 18 rows of SHA-256 hashes with explicit status |
 | Figures | `outputs/figures/*.png` | 15 plots: 5 Stage 7, 4 leverage/LI, 2 WP, 2 expected-vs-actual, 2 high-vs-ordinary |
-| Report figures | `outputs/figures/` | 9 data figures used by the v3 report: S vs P, rank intervals, P(top 10), placebo, WP calibration, LI by over/wickets, chase heatmap, high-vs-ordinary batting and bowling; the four v2 methodology diagrams are no longer used |
+| Report figures | `outputs/figures/` | 9 data figures used by the v4 report: S vs P, rank intervals, P(top 10), placebo, WP calibration, LI by over/wickets, chase heatmap, high-vs-ordinary batting and bowling; the four v2 methodology diagrams are no longer used |
 | Report (v1) | `outputs/Methodology_Report_Final.pdf`, `docs/Methodology_Report_Final.docx` | 16-page methodology report |
 | Report (v2) | `outputs/Methodology_Report_Final_v2.pdf`, `docs/Methodology_Report_Final_v2.docx` | Earlier 29-page report, retained as a backup |
-| **Report (v3)** | `outputs/Methodology_Report_Final_v3.pdf`, `docs/Methodology_Report_Final_v3.docx` | 21-page submission report: cover with team mark, populated contents, problem statement, challenges, rankings, method, validation, RR implications, limitations, conclusion, reproducibility appendix; no methodology diagrams or source labels |
-| Report verifier | `scripts/verify_report_consistency_v3.py` | v3-specific consistency audit (PASS) |
-| Tests | `tests/` | 97 tests across 13 files |
-| Release bundle | `superr_selector_s2_final_release.zip` | 182 files, SHA-256 manifest, 0 mismatches |
+| Report (v3) | `outputs/Methodology_Report_Final_v3.pdf`, `docs/Methodology_Report_Final_v3.docx` | Prior 21-page report, retained unchanged as a backup |
+| **Report (v4)** | `outputs/Methodology_Report_Final_v4.pdf`, `docs/Methodology_Report_Final_v4.docx` | 21-page final report with corrected WP metrics, WPAE/APV definitions, placebo interpretation, P(top 10) ordering and Figures 8–9 units |
+| Report verifier | `scripts/verify_report_consistency_v4.py` | v4-specific consistency audit (PASS) |
+| Tests | `tests/` | 104 tests across 14 files |
+| Release bundle | `superr_selector_s2_final_release.zip` | 191 files, SHA-256 manifest, 0 mismatches |
 
 ## 2. Headline result
 
@@ -329,7 +334,7 @@ Independent, read-only checks in `src/s7c_verify.py` plus `tests/`.
 | Bootstrap statistics | **PASS** | integer median, 2.5/97.5 (`higher`), P(top 10), P(top 5) reproduce stored values |
 | Final ranking consistency | **PASS** | 0 order and 0 column mismatches, both roles, including reserves 11–15 |
 | Historical manifest integrity | **PARTIAL** | 25 files have authentic baselines and all match; **44 have no recoverable baseline** |
-| Full test suite | **PASS** | 97 passed, exit 0 |
+| Full test suite | **PASS** | 104 passed, exit 0 |
 
 Manifest states, kept strictly distinct:
 
@@ -454,6 +459,7 @@ RR_challange/
   Data Pack/                       raw inputs (never modified)
   PRD_Pressure_Players.md          task specification
   README.md                        this file
+  assets/rr_logo.svg               README logo (hand-written vector)
   DECISIONS.md                     chronological decision + failure log
   SIGN_CONVENTION_REPORT.md        sign reconciliation analysis
   BOWLER_SIGN_REPORT.md            sign investigation
@@ -481,7 +487,7 @@ RR_challange/
     s7b_manifest.py                freeze manifest
     s7c_verify.py                  read-only verification audit
     official_sign_correction.py    sign correction + 18-file manifest
-  tests/                           97 tests, 13 files
+  tests/                           104 tests, 14 files
   outputs/
     final_rankings.csv             file of record (30 x 50)
     unstop_entry.txt               submission text

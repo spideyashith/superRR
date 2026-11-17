@@ -1,0 +1,172 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 280" width="960" height="280" role="img" aria-labelledby="rrTitle rrDesc">
+  <title id="rrTitle">SupeRR Selector — Season 2</title>
+  <desc id="rrDesc">A gold RR monogram inside a leverage dial, with a cricket ball resting in the counter of the first R.</desc>
+
+  <defs>
+    <linearGradient id="card" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#070b1a"/>
+      <stop offset="0.55" stop-color="#0b1430"/>
+      <stop offset="1" stop-color="#121d3d"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0.4" y2="1">
+      <stop offset="0" stop-color="#ffe9a8"/>
+      <stop offset="0.42" stop-color="#f3c75a"/>
+      <stop offset="0.72" stop-color="#d99b2b"/>
+      <stop offset="1" stop-color="#f7d585"/>
+    </linearGradient>
+    <linearGradient id="goldDim" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#8a6a25" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#c79a3c" stop-opacity="0.35"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.38" cy="0.32" r="0.85">
+      <stop offset="0" stop-color="#2a3f7d" stop-opacity="0.95"/>
+      <stop offset="0.6" stop-color="#101a38" stop-opacity="0.95"/>
+      <stop offset="1" stop-color="#080d1f"/>
+    </radialGradient>
+    <linearGradient id="textGold" x1="0" y1="0" x2="1" y2="0.3">
+      <stop offset="0" stop-color="#fff3c9"/>
+      <stop offset="0.5" stop-color="#f4cd6b"/>
+      <stop offset="1" stop-color="#e0a63a"/>
+    </linearGradient>
+    <pattern id="dots" width="18" height="18" patternUnits="userSpaceOnUse">
+      <circle cx="1.4" cy="1.4" r="1.1" fill="#8fa4d6" opacity="0.16"/>
+    </pattern>
+  </defs>
+
+  <!-- card -->
+  <rect x="0.75" y="0.75" width="958.5" height="278.5" rx="28" fill="url(#card)"/>
+  <rect x="0.75" y="0.75" width="958.5" height="278.5" rx="28" fill="none" stroke="url(#goldDim)" stroke-width="1.5"/>
+  <rect x="300" y="26" width="636" height="228" rx="18" fill="url(#dots)"/>
+
+  <!-- faint pressure arcs behind the wordmark -->
+  <g fill="none" stroke="url(#goldDim)" stroke-width="1.1" opacity="0.5">
+    <path d="M 812 300 A 190 190 0 0 1 1010 96"/>
+    <path d="M 780 300 A 230 230 0 0 1 1010 60"/>
+  </g>
+
+  <!-- emblem dial -->
+  <g>
+    <circle cx="146" cy="140" r="112" fill="#050a18" opacity="0.55"/>
+    <circle cx="146" cy="140" r="106" fill="url(#glow)" stroke="url(#goldDim)" stroke-width="1.2"/>
+
+    <!-- 72 leverage ticks, 5 degrees apart -->
+    <g stroke="url(#gold)" stroke-linecap="round" opacity="0.75">
+      <line x1="146.00" y1="52.00" x2="146.00" y2="60.00" stroke-width="2"/>
+      <line x1="153.67" y1="52.33" x2="153.32" y2="56.32" stroke-width="1"/>
+      <line x1="161.28" y1="53.34" x2="160.59" y2="57.28" stroke-width="1"/>
+      <line x1="168.78" y1="55.00" x2="167.74" y2="58.86" stroke-width="1"/>
+      <line x1="176.10" y1="57.31" x2="174.73" y2="61.07" stroke-width="1"/>
+      <line x1="183.19" y1="60.24" x2="181.50" y2="63.87" stroke-width="1"/>
+      <line x1="190.00" y1="63.79" x2="186.00" y2="70.72" stroke-width="2"/>
+      <line x1="196.47" y1="67.91" x2="194.18" y2="71.19" stroke-width="1"/>
+      <line x1="202.57" y1="72.59" x2="199.99" y2="75.65" stroke-width="1"/>
+      <line x1="208.23" y1="77.77" x2="205.40" y2="80.60" stroke-width="1"/>
+      <line x1="213.41" y1="83.43" x2="210.35" y2="86.01" stroke-width="1"/>
+      <line x1="218.09" y1="89.53" x2="214.81" y2="91.82" stroke-width="1"/>
+      <line x1="222.21" y1="96.00" x2="215.28" y2="100.00" stroke-width="2"/>
+      <line x1="225.76" y1="102.81" x2="222.13" y2="104.50" stroke-width="1"/>
+      <line x1="228.69" y1="109.90" x2="224.93" y2="111.27" stroke-width="1"/>
+      <line x1="231.00" y1="117.22" x2="227.14" y2="118.26" stroke-width="1"/>
+      <line x1="232.66" y1="124.72" x2="228.72" y2="125.41" stroke-width="1"/>
+      <line x1="233.67" y1="132.33" x2="229.68" y2="132.68" stroke-width="1"/>
+      <line x1="234.00" y1="140.00" x2="226.00" y2="140.00" stroke-width="2"/>
+      <line x1="233.67" y1="147.67" x2="229.68" y2="147.32" stroke-width="1"/>
+      <line x1="232.66" y1="155.28" x2="228.72" y2="154.59" stroke-width="1"/>
+      <line x1="231.00" y1="162.78" x2="227.14" y2="161.74" stroke-width="1"/>
+      <line x1="228.69" y1="170.10" x2="224.93" y2="168.73" stroke-width="1"/>
+      <line x1="225.76" y1="177.19" x2="222.13" y2="175.50" stroke-width="1"/>
+      <line x1="222.21" y1="184.00" x2="215.28" y2="180.00" stroke-width="2"/>
+      <line x1="218.09" y1="190.47" x2="214.81" y2="188.18" stroke-width="1"/>
+      <line x1="213.41" y1="196.57" x2="210.35" y2="193.99" stroke-width="1"/>
+      <line x1="208.23" y1="202.23" x2="205.40" y2="199.40" stroke-width="1"/>
+      <line x1="202.57" y1="207.41" x2="199.99" y2="204.35" stroke-width="1"/>
+      <line x1="196.47" y1="212.09" x2="194.18" y2="208.81" stroke-width="1"/>
+      <line x1="190.00" y1="216.21" x2="186.00" y2="209.28" stroke-width="2"/>
+      <line x1="183.19" y1="219.76" x2="181.50" y2="216.13" stroke-width="1"/>
+      <line x1="176.10" y1="222.69" x2="174.73" y2="218.93" stroke-width="1"/>
+      <line x1="168.78" y1="225.00" x2="167.74" y2="221.14" stroke-width="1"/>
+      <line x1="161.28" y1="226.66" x2="160.59" y2="222.72" stroke-width="1"/>
+      <line x1="153.67" y1="227.67" x2="153.32" y2="223.68" stroke-width="1"/>
+      <line x1="146.00" y1="228.00" x2="146.00" y2="220.00" stroke-width="2"/>
+      <line x1="138.33" y1="227.67" x2="138.68" y2="223.68" stroke-width="1"/>
+      <line x1="130.72" y1="226.66" x2="131.41" y2="222.72" stroke-width="1"/>
+      <line x1="123.22" y1="225.00" x2="124.26" y2="221.14" stroke-width="1"/>
+      <line x1="115.90" y1="222.69" x2="117.27" y2="218.93" stroke-width="1"/>
+      <line x1="108.81" y1="219.76" x2="110.50" y2="216.13" stroke-width="1"/>
+      <line x1="102.00" y1="216.21" x2="106.00" y2="209.28" stroke-width="2"/>
+      <line x1="95.53" y1="212.09" x2="97.82" y2="208.81" stroke-width="1"/>
+      <line x1="89.43" y1="207.41" x2="92.01" y2="204.35" stroke-width="1"/>
+      <line x1="83.77" y1="202.23" x2="86.60" y2="199.40" stroke-width="1"/>
+      <line x1="78.59" y1="196.57" x2="81.65" y2="193.99" stroke-width="1"/>
+      <line x1="73.91" y1="190.47" x2="77.19" y2="188.18" stroke-width="1"/>
+      <line x1="69.79" y1="184.00" x2="76.72" y2="180.00" stroke-width="2"/>
+      <line x1="66.24" y1="177.19" x2="69.87" y2="175.50" stroke-width="1"/>
+      <line x1="63.31" y1="170.10" x2="67.07" y2="168.73" stroke-width="1"/>
+      <line x1="61.00" y1="162.78" x2="64.86" y2="161.74" stroke-width="1"/>
+      <line x1="59.34" y1="155.28" x2="63.28" y2="154.59" stroke-width="1"/>
+      <line x1="58.33" y1="147.67" x2="62.32" y2="147.32" stroke-width="1"/>
+      <line x1="58.00" y1="140.00" x2="66.00" y2="140.00" stroke-width="2"/>
+      <line x1="58.33" y1="132.33" x2="62.32" y2="132.68" stroke-width="1"/>
+      <line x1="59.34" y1="124.72" x2="63.28" y2="125.41" stroke-width="1"/>
+      <line x1="61.00" y1="117.22" x2="64.86" y2="118.26" stroke-width="1"/>
+      <line x1="63.31" y1="109.90" x2="67.07" y2="111.27" stroke-width="1"/>
+      <line x1="66.24" y1="102.81" x2="69.87" y2="104.50" stroke-width="1"/>
+      <line x1="69.79" y1="96.00" x2="76.72" y2="100.00" stroke-width="2"/>
+      <line x1="73.91" y1="89.53" x2="77.19" y2="91.82" stroke-width="1"/>
+      <line x1="78.59" y1="83.43" x2="81.65" y2="86.01" stroke-width="1"/>
+      <line x1="83.77" y1="77.77" x2="86.60" y2="80.60" stroke-width="1"/>
+      <line x1="89.43" y1="72.59" x2="92.01" y2="75.65" stroke-width="1"/>
+      <line x1="95.53" y1="67.91" x2="97.82" y2="71.19" stroke-width="1"/>
+      <line x1="102.00" y1="63.79" x2="106.00" y2="70.72" stroke-width="2"/>
+      <line x1="108.81" y1="60.24" x2="110.50" y2="63.87" stroke-width="1"/>
+      <line x1="115.90" y1="57.31" x2="117.27" y2="61.07" stroke-width="1"/>
+      <line x1="123.22" y1="55.00" x2="124.26" y2="58.86" stroke-width="1"/>
+      <line x1="130.72" y1="53.34" x2="131.41" y2="57.28" stroke-width="1"/>
+      <line x1="138.33" y1="52.33" x2="138.68" y2="56.32" stroke-width="1"/>
+    </g>
+
+    <!-- active pressure arc -->
+    <circle cx="146" cy="140" r="98" fill="none" stroke="#1b2a52" stroke-width="4"/>
+    <path d="M 81.9 215.9 A 98 98 0 1 1 242.5 123.0" fill="none" stroke="url(#gold)" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="242.5" cy="123.0" r="5.2" fill="#ff6b4a"/>
+    <circle cx="242.5" cy="123.0" r="9.5" fill="none" stroke="#ff6b4a" stroke-width="1.4" opacity="0.55"/>
+
+    <!-- RR monogram -->
+    <g transform="translate(95,102)" fill="none" stroke="url(#gold)" stroke-width="9.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M 6 5 V 71"/>
+      <path d="M 6 6 H 24 A 17.5 17.5 0 0 1 24 41 H 6"/>
+      <path d="M 22 41 L 39 71"/>
+      <g transform="translate(56,0)">
+        <path d="M 6 5 V 71"/>
+        <path d="M 6 6 H 24 A 17.5 17.5 0 0 1 24 41 H 6"/>
+        <path d="M 22 41 L 39 71"/>
+      </g>
+    </g>
+
+    <!-- cricket ball resting in the counter of the first R -->
+    <g transform="translate(119,125.5)">
+      <circle r="10.5" fill="#d7263d"/>
+      <circle r="10.5" fill="none" stroke="#8d1123" stroke-width="1.1"/>
+      <path d="M -7 -9 Q 0 0 -7 9" fill="none" stroke="#ffe7d6" stroke-width="1.5" stroke-linecap="round"/>
+      <g stroke="#ffe7d6" stroke-width="1.2" stroke-linecap="round">
+        <path d="M -9.5 -5.5 l 3 1"/>
+        <path d="M -9.9 -1.5 l 3.2 0.4"/>
+        <path d="M -9.5 2.5 l 3 -1"/>
+        <path d="M -8.6 6 l 2.6 -1.5"/>
+      </g>
+    </g>
+  </g>
+
+  <!-- wordmark -->
+  <g font-family="Georgia, 'Times New Roman', serif">
+    <text x="304" y="96" font-size="13" letter-spacing="4.5" fill="#c9a256" font-family="Helvetica Neue, Arial, sans-serif">SUPERR SELECTOR</text>
+    <text x="301" y="163" font-size="66" font-weight="700" fill="url(#textGold)">SupeRR</text>
+    <text x="588" y="158" font-size="22" font-style="italic" fill="#8fa4d6">/ Season 2</text>
+  </g>
+
+  <line x1="304" y1="186" x2="880" y2="186" stroke="url(#goldDim)" stroke-width="1"/>
+
+  <text x="304" y="216" font-size="17" fill="#dfe6f5" font-family="Helvetica Neue, Arial, sans-serif">Most Reliable Players Under Pressure</text>
+  <text x="304" y="242" font-size="12.5" letter-spacing="1.6" fill="#7f92bb" font-family="Helvetica Neue, Arial, sans-serif">IPL 2022–2026 · T20I 2022–2026 · 1,000 MATCH RESAMPLES · ROUND 1</text>
+
+</svg>
